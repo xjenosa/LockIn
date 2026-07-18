@@ -141,7 +141,7 @@ export default function HostGame() {
                   boardDone(room, pack) ? "bg-gold text-boarddark animate-pulse" : "bg-white/10"
                 }`}
               >
-                Final Jeopardy →
+                Final Round →
               </button>
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function HostGame() {
   if (room.phase === "final_wager") {
     return (
       <Center>
-        <p className="font-display text-gold text-2xl tracking-widest uppercase">Final Jeopardy</p>
+        <p className="font-display text-gold text-2xl tracking-widest uppercase">Final Round</p>
         <h1 className="font-display text-4xl md:text-6xl my-6">{pack.final.category}</h1>
         <p className="text-white/70 max-w-lg">
           Teams are entering secret wagers on their phones (0 up to their score).

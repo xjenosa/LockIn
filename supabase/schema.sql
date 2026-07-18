@@ -1,4 +1,4 @@
--- Buzzer Jeopardy — schema. Run this FIRST in the Supabase SQL editor, then functions.sql.
+-- Buzzer — schema. Run this FIRST in the Supabase SQL editor, then functions.sql.
 
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
@@ -47,7 +47,7 @@ create table if not exists players (
   created_at timestamptz not null default now()
 );
 
--- Final Jeopardy wagers/answers: NO select policy -> phones can't peek at
+-- Final round wagers/answers: NO select policy -> phones can't peek at
 -- other teams. Host reads them via the host_get_finals RPC.
 create table if not exists final_submissions (
   team_id uuid primary key references teams(id) on delete cascade,

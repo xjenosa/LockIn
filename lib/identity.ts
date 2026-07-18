@@ -18,15 +18,15 @@ const safe = {
 };
 
 export function getHostToken(code: string): string | null {
-  return safe.get(`jeopardy:host:${code.toUpperCase()}`);
+  return safe.get(`buzzer:host:${code.toUpperCase()}`);
 }
 
 export function setHostToken(code: string, token: string) {
-  safe.set(`jeopardy:host:${code.toUpperCase()}`, token);
+  safe.set(`buzzer:host:${code.toUpperCase()}`, token);
 }
 
 export function getPlayerIdentity(code: string): PlayerIdentity | null {
-  const raw = safe.get(`jeopardy:player:${code.toUpperCase()}`);
+  const raw = safe.get(`buzzer:player:${code.toUpperCase()}`);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as PlayerIdentity;
@@ -36,5 +36,5 @@ export function getPlayerIdentity(code: string): PlayerIdentity | null {
 }
 
 export function setPlayerIdentity(code: string, identity: PlayerIdentity) {
-  safe.set(`jeopardy:player:${code.toUpperCase()}`, JSON.stringify(identity));
+  safe.set(`buzzer:player:${code.toUpperCase()}`, JSON.stringify(identity));
 }

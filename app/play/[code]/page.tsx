@@ -160,7 +160,7 @@ export default function Play() {
   );
 }
 
-// Final Jeopardy on the phone: secret wager, then secret typed answer.
+// Final Round on the phone: secret wager, then secret typed answer.
 function FinalPhone({
   phase,
   playerId,
@@ -215,7 +215,7 @@ function FinalPhone({
     <main className="min-h-screen p-4 flex flex-col gap-4">
       {header}
       <div className="flex-1 flex flex-col justify-center gap-4 max-w-md w-full mx-auto">
-        <h1 className="font-display text-3xl text-gold text-center">FINAL JEOPARDY</h1>
+        <h1 className="font-display text-3xl text-gold text-center">FINAL ROUND</h1>
         {phase === "final_wager" ? (
           <>
             <p className="text-center text-white/70">

@@ -1,4 +1,4 @@
--- Buzzer Jeopardy — RPC functions. Run AFTER schema.sql.
+-- Buzzer — RPC functions. Run AFTER schema.sql.
 -- All functions are SECURITY DEFINER (they bypass RLS); host functions verify
 -- host_token against room_hosts before mutating anything.
 

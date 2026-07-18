@@ -1,4 +1,4 @@
-# Buzzer Jeopardy — One-Shot Build Prompt for Claude Fable 5
+# Buzzer — One-Shot Build Prompt for Claude Fable 5
 
 > **How to use this file:** Paste this entire document into Claude Fable 5 as the build prompt.
 > Provide your Supabase URL + anon key when asked (or let Fable scaffold `.env.local` for you to fill).

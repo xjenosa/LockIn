@@ -26,7 +26,7 @@ export default function Projector() {
   if (room.phase === "lobby") {
     return (
       <main className="min-h-screen flex flex-col items-center justify-center gap-8 p-8">
-        <h1 className="font-display text-5xl md:text-7xl text-gold text-shadow-board">JEOPARDY!</h1>
+        <h1 className="font-display text-5xl md:text-7xl text-gold text-shadow-board">BUZZER!</h1>
         <p className="text-white/70 text-2xl">📱 Scan to join — pick or create a team</p>
         <QRJoin code={code} big />
         <div className="flex flex-wrap gap-3 justify-center max-w-3xl">
@@ -77,7 +77,7 @@ export default function Projector() {
     return (
       <Center>
         <p className="font-display text-gold text-3xl tracking-widest uppercase animate-pulse">
-          Final Jeopardy
+          Final Round
         </p>
         <h1 className="font-display text-5xl md:text-7xl my-8 max-w-5xl">
           {room.phase === "final_wager" ? pack.final.category : pack.final.clue}

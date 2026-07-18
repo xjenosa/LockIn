@@ -6,8 +6,8 @@ const anton = Anton({ weight: "400", subsets: ["latin"], variable: "--font-displ
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Buzzer Jeopardy",
-  description: "Kahoot-style team buzzer Jeopardy — host on the big screen, buzz on your phone.",
+  title: "Buzzer",
+  description: "Kahoot-style team buzzer trivia — host on the big screen, buzz on your phone.",
 };
 
 export const viewport: Viewport = {

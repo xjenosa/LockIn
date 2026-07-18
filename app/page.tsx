@@ -15,7 +15,7 @@ export default function Landing() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center gap-10 p-6">
       <div className="text-center">
-        <h1 className="font-display text-6xl md:text-8xl text-gold text-shadow-board">JEOPARDY!</h1>
+        <h1 className="font-display text-6xl md:text-8xl text-gold text-shadow-board">BUZZER!</h1>
         <p className="mt-2 text-white/70">team buzzer edition</p>
       </div>
 

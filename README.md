@@ -1,6 +1,6 @@
-# 🔔 Buzzer Jeopardy
+# 🔔 Buzzer
 
-Kahoot-style **team buzzer Jeopardy** for in-person events. The host projects the board and reads clues aloud; players scan a QR code, form teams, and race to buzz on their phones. Scores update live on a team leaderboard. Includes Daily Doubles, Final Jeopardy with secret wagers, and four ready-to-play question packs.
+Kahoot-style **team buzzer trivia** for in-person events. The host projects the board and reads clues aloud; players scan a QR code, form teams, and race to buzz on their phones. Scores update live on a team leaderboard. Includes Daily Doubles, Final Round with secret wagers, and four ready-to-play question packs.
 
 **Stack:** Next.js (App Router) + Tailwind + Supabase (Postgres + Realtime) → deploys to Vercel free tier.
 
@@ -38,7 +38,7 @@ Open http://localhost:3000 — but note phones can't reach `localhost`; for a re
 | Projector | `/board/XXXX` | read-only mirror for the big screen |
 | Players | `/play/XXXX` | everyone's phones (QR on the lobby/projector) |
 
-**Flow:** pick a pack → project the lobby QR → players join/create teams → Start game → tap a clue, **read it aloud**, then hit **"Open buzzers"** → first buzz locks everyone else out → mark ✓ (+value) or ✗ (−value, that team is locked out and others can steal) → Final Jeopardy when the board's done (secret wagers → 60s clue → typed answers → dramatic reveal, lowest score first) → confetti. **"Play again"** resets scores back to the lobby.
+**Flow:** pick a pack → project the lobby QR → players join/create teams → Start game → tap a clue, **read it aloud**, then hit **"Open buzzers"** → first buzz locks everyone else out → mark ✓ (+value) or ✗ (−value, that team is locked out and others can steal) → Final Round when the board's done (secret wagers → 60s clue → typed answers → dramatic reveal, lowest score first) → confetti. **"Play again"** resets scores back to the lobby.
 
 - **Daily Doubles:** marked clues splash "DAILY DOUBLE" — only the wagering team plays; ask their wager out loud, type it, reveal.
 - Everything survives page reloads (host key + player identity are in localStorage; game state lives in Supabase).
