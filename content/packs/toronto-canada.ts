@@ -3,7 +3,7 @@ import type { Pack } from "../types";
 export const torontoCanada: Pack = {
   id: "toronto-canada",
   name: "Toronto & Canada",
-  description: "Landmarks, icons, sports, slang, history and geography — full Canadian flavour.",
+  description: "Landmarks, icons, sports, slang, history and geography. Full Canadian flavour.",
   categories: [
     {
       name: "Toronto Landmarks",
@@ -20,7 +20,7 @@ export const torontoCanada: Pack = {
       clues: [
         { value: 200, clue: "This Québécoise belted the Titanic theme 'My Heart Will Go On'.", answer: "Who is Céline Dion?" },
         { value: 400, clue: "This Vancouver-raised Deadpool actor co-owns a Welsh football club.", answer: "Who is Ryan Reynolds?" },
-        { value: 600, clue: "'The Great One' — hockey's all-time points leader.", answer: "Who is Wayne Gretzky?" },
+        { value: 600, clue: "'The Great One': hockey's all-time points leader.", answer: "Who is Wayne Gretzky?" },
         { value: 800, clue: "In 1980 this one-legged runner's Marathon of Hope raised millions for cancer research.", answer: "Who is Terry Fox?" },
         { value: 1000, clue: "This Canadian scientist co-discovered insulin in Toronto in 1921 and won a Nobel Prize.", answer: "Who is Frederick Banting?" },
       ],
@@ -32,13 +32,13 @@ export const torontoCanada: Pack = {
         { value: 400, clue: "This team won back-to-back World Series in 1992 and 1993.", answer: "Who are the Toronto Blue Jays?" },
         { value: 600, clue: "BMO Field is home to the Argonauts and this MLS club.", answer: "What is Toronto FC?" },
         { value: 800, clue: "In 2019 this Mississauga teen beat Serena Williams to win the US Open.", answer: "Who is Bianca Andreescu?", dailyDouble: true },
-        { value: 1000, clue: "The Maple Leafs last hoisted the Stanley Cup in this year — the last season of the Original Six era.", answer: "What is 1967?" },
+        { value: 1000, clue: "The Maple Leafs last hoisted the Stanley Cup in this year, the last season of the Original Six era.", answer: "What is 1967?" },
       ],
     },
     {
       name: "Canadian Slang & Culture",
       clues: [
-        { value: 200, clue: "Fries, cheese curds and gravy — Québec's gift to 2 a.m.", answer: "What is poutine?" },
+        { value: 200, clue: "Fries, cheese curds and gravy: Québec's gift to 2 a.m.", answer: "What is poutine?" },
         { value: 400, clue: "The $1 coin, named for the bird on it.", answer: "What is a loonie?" },
         { value: 600, clue: "Canadians wear this knitted winter hat; Americans might call it a beanie.", answer: "What is a toque?" },
         { value: 800, clue: "If your professor calls you this, you're trying a little too hard to impress.", answer: "What is a keener?" },
@@ -58,7 +58,7 @@ export const torontoCanada: Pack = {
     {
       name: "Coast to Coast",
       clues: [
-        { value: 200, clue: "Canada's capital city — no, it's not Toronto.", answer: "What is Ottawa?" },
+        { value: 200, clue: "Canada's capital city. No, it's not Toronto.", answer: "What is Ottawa?" },
         { value: 400, clue: "Anne of Green Gables put this smallest province on the map.", answer: "What is Prince Edward Island?" },
         { value: 600, clue: "Canada has this many provinces (territories not included).", answer: "What is ten?" },
         { value: 800, clue: "This bay between New Brunswick and Nova Scotia has the highest tides on Earth.", answer: "What is the Bay of Fundy?", dailyDouble: true },
@@ -68,7 +68,7 @@ export const torontoCanada: Pack = {
   ],
   final: {
     category: "Canadian Firsts",
-    clue: "Invented in Toronto in 1921–22, this hormone treatment turned a fatal diagnosis into a manageable disease — and Canada sold the patent for $1.",
+    clue: "Invented in Toronto in 1921-22, this hormone treatment turned a fatal diagnosis into a manageable disease, and Canada sold the patent for $1.",
     answer: "What is insulin?",
   },
 };

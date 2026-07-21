@@ -1,9 +1,9 @@
--- Buzzer — maintenance. Optional: not needed to set the app up, and safe to run
+-- Buzzer maintenance. Optional: not needed to set the app up, and safe to run
 -- at any time, including during a party. Run it whenever you want to tidy up.
 --
 -- Games normally clean themselves up: "Finish & back to home" on the results
 -- screen calls host_delete_room, which deletes the room and cascades to its
--- teams, players, buzzes and score_events. This file catches what that misses —
+-- teams, players, buzzes and score_events. This file catches what that misses:
 -- games abandoned mid-round when a laptop was shut or a tab was lost.
 
 -- Finished games where the host closed the tab instead of using the button.

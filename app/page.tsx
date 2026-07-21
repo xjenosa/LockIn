@@ -16,12 +16,11 @@ export default function Landing() {
     <main className="min-h-dvh flex flex-col items-center justify-center gap-10 p-6">
       <div className="text-center">
         <h1 className="font-display text-6xl md:text-8xl text-gold text-shadow-board">BUZZER!</h1>
-        <p className="mt-2 text-white/70">team buzzer edition</p>
       </div>
 
       {!supabaseConfigured && (
         <p className="max-w-md text-center text-amber-300 bg-amber-950/50 rounded-xl p-4 text-sm">
-          ⚠️ Supabase isn&apos;t configured — set NEXT_PUBLIC_SUPABASE_URL and
+          ⚠️ Supabase isn&apos;t configured. Set NEXT_PUBLIC_SUPABASE_URL and
           NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see README).
         </p>
       )}
@@ -47,7 +46,7 @@ export default function Landing() {
         onClick={() => router.push("/host")}
         className="text-white/60 underline underline-offset-4 hover:text-gold"
       >
-        I&apos;m the host — create a game →
+        I&apos;m the host. Create a game →
       </button>
     </main>
   );

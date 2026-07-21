@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { serverNow } from "@/lib/serverClock";
 
 // Countdown derived from a shared DB timestamp so every screen agrees.
-// Purely visual — the host adjudicates; nothing auto-fires at zero.
+// Purely visual: the host adjudicates; nothing auto-fires at zero.
 export default function Timer({
   openedAt,
   seconds,
@@ -21,7 +21,7 @@ export default function Timer({
       setRemaining(null);
       return;
     }
-    // openedAt sits in the FUTURE while the buzzer is arming — that window
+    // openedAt sits in the FUTURE while the buzzer is arming. That window
     // belongs to the buzzer countdown, so stay hidden until the clock starts.
     // serverNow() because openedAt is the DB's clock: on a slow device Date.now()
     // would keep the bar hidden for the whole skew after the clue went live.

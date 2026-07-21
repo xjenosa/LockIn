@@ -41,7 +41,7 @@ function check(name, pass, detail = "") {
   process.stdout.write(pass ? "." : "F");
 }
 const eq = (name, actual, expected, extra = "") =>
-  check(name, actual === expected, `got ${JSON.stringify(actual)}, want ${JSON.stringify(expected)}${extra ? " — " + extra : ""}`);
+  check(name, actual === expected, `got ${JSON.stringify(actual)}, want ${JSON.stringify(expected)}${extra ? "; " + extra : ""}`);
 
 async function suite(key, only, name, fn) {
   if (only.length && !only.includes(key)) return;
@@ -74,7 +74,7 @@ async function freshGame(n = 3) {
   return { code, token: host_token, players, roomId: r.id };
 }
 
-// Sum of every non-reversed score_event per team — must always equal teams.score.
+// Sum of every non-reversed score_event per team: must always equal teams.score.
 async function ledgerMatches(token, roomId) {
   const log = await rpc("host_get_score_log", { p_host_token: token });
   const expected = new Map();
@@ -134,7 +134,7 @@ await suite("arm", only, "buzzer arm delay", async () => {
   check("clue_opened_at matches arms_at (clock starts after countdown)",
     r.clue_opened_at === r.buzzer_arms_at, `opened=${r.clue_opened_at} arms=${r.buzzer_arms_at}`);
 
-  // Spam during the countdown — every one must be rejected.
+  // Spam during the countdown: every one must be rejected.
   const early = await Promise.all(
     Array.from({ length: 12 }, () =>
       rpc("claim_buzz", { p_code: g.code, p_player_id: g.players[0].player_id, p_clue_id: CLUE })
@@ -165,7 +165,7 @@ await suite("rotation", only, "turn rotation", async () => {
     const clue = `c${i % 6}-200`;
     await rpc("host_open_clue", { p_host_token: g.token, p_clue_id: clue, p_is_dd: false, p_timer: 12 });
     await rpc("host_open_buzzer", { p_host_token: g.token, p_arm_seconds: 0 });
-    // Same team answers correctly every single time — the sweep scenario.
+    // Same team answers correctly every single time: the sweep scenario.
     await rpc("claim_buzz", { p_code: g.code, p_player_id: g.players[0].player_id, p_clue_id: clue });
     await rpc("host_award", {
       p_host_token: g.token, p_team_id: g.players[0].team_id, p_delta: 200,
@@ -217,7 +217,7 @@ await suite("undo", only, "score ledger and undo", async () => {
   const first = log.find((e) => e.label === "a");
   const scoreBefore = (await teamsOf(g.roomId)).find((t) => t.id === team).score;
 
-  // Undo the middle of the stack, not the top — the host's real recovery path.
+  // Undo the middle of the stack, not the top: the host's real recovery path.
   await rpc("host_undo_event", { p_host_token: g.token, p_event_id: first.id });
   const scoreAfter = (await teamsOf(g.roomId)).find((t) => t.id === team).score;
   eq("undoing a non-top event applies exactly -delta", scoreAfter, scoreBefore - 600);
@@ -231,7 +231,7 @@ await suite("undo", only, "score ledger and undo", async () => {
   eq("double-undo does not double-refund",
     (await teamsOf(g.roomId)).find((t) => t.id === team).score, scoreAfter);
 
-  // 40 undos of every event, hammered — ledger must survive.
+  // 40 undos of every event, hammered: ledger must survive.
   const all = await rpc("host_get_score_log", { p_host_token: g.token });
   await Promise.allSettled(
     all.flatMap((e) => [

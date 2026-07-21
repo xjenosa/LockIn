@@ -8,14 +8,14 @@ import type { Team } from "@/lib/types";
 // Shared so callers that run their own RPC (the play page's edit sheet calls
 // update_player) surface the exact same wording.
 export const FRIENDLY: Record<string, string> = {
-  ROOM_NOT_FOUND: "Room not found — check the code!",
-  TEAM_NAME_TAKEN: "That team name is taken — pick another.",
+  ROOM_NOT_FOUND: "Room not found. Check the code!",
+  TEAM_NAME_TAKEN: "That team name is taken. Pick another.",
   TEAM_NAME_REQUIRED: "Give your team a name!",
-  TEAM_NOT_FOUND: "That team is gone — pick another one.",
-  PLAYER_NOT_FOUND: "We lost your player — rejoin the room.",
-  TEAM_LOCKED_IN_FINAL: "Teams are locked for the Final Round — ask your host.",
-  TEAM_LOCKED_MID_CLUE: "Can't switch teams mid-clue — try between clues.",
-  GAME_CLOSED: "This game has already finished — ask your host to start a new round.",
+  TEAM_NOT_FOUND: "That team is gone. Pick another one.",
+  PLAYER_NOT_FOUND: "We lost your player. Rejoin the room.",
+  TEAM_LOCKED_IN_FINAL: "Teams are locked for the Final Round. Ask your host.",
+  TEAM_LOCKED_MID_CLUE: "Can't switch teams mid-clue. Try between clues.",
+  GAME_CLOSED: "This game has already finished. Ask your host to start a new round.",
 };
 
 // Two modes: a fresh join (default) and editing an existing player, where the
@@ -59,7 +59,7 @@ export default function TeamJoin({
   const autoJoined = useRef(false);
 
   // teams is [] on first render (useRoom hasn't fetched yet) and a useState
-  // initializer never re-runs — without this everyone lands on "Create a team".
+  // initializer never re-runs, so without this everyone lands on "Create a team".
   // Only the first arrival counts, and never once they've started naming a team:
   // the very first player is mid-type in the Create form when everyone else's
   // teams land, and switching them to the list throws that away.
@@ -119,8 +119,8 @@ export default function TeamJoin({
 
       {nameOnly ? (
         <p className="text-white/50 text-sm">
-          Teams are locked while a clue is live and through the Final Round — you can
-          still fix your name.
+          Teams are locked while a clue is live and through the Final Round, but you
+          can still fix your name.
         </p>
       ) : (
         <>

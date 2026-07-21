@@ -40,7 +40,7 @@ export default function Play() {
   }, [teams, me, identity, savedTeamId]);
 
   // Our player row vanishes for good on a host reset, but it also blips missing
-  // mid-refetch — only bounce to the join screen once it stays missing, or a
+  // mid-refetch, so only bounce to the join screen once it stays missing, or a
   // hiccup spawns a duplicate player.
   useEffect(() => {
     if (!identity || me) {
@@ -61,7 +61,7 @@ export default function Play() {
   if (!room || !ready) return <Center>Loading…</Center>;
 
   if (!identity || staleIdentity) {
-    // The lobby closes at the Final Round — show that rather than a join form
+    // The lobby closes at the Final Round, so show that rather than a join form
     // the server is guaranteed to reject with GAME_CLOSED.
     const closed = ["final_wager", "final_clue", "final_reveal", "results"].includes(room.phase);
     if (closed)
@@ -115,8 +115,8 @@ export default function Play() {
     room.phase === "final_reveal" ||
     room.phase === "results";
 
-  // The edit sheet lives inside `header` so every phase — including the ones
-  // that only receive it as a prop — can reach it.
+  // The edit sheet lives inside `header` so every phase (including the ones
+  // that only receive it as a prop) can reach it.
   const header = (
     <>
       <header className="flex items-center gap-3 rounded-2xl bg-black/30 border border-white/10 p-3">
@@ -310,7 +310,7 @@ function FinalPhone({
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "error";
-      setError(msg === "FINALS_LOCKED" ? "Too late — answers are locked!" : msg);
+      setError(msg === "FINALS_LOCKED" ? "Too late! Answers are locked." : msg);
     }
   };
 
@@ -322,7 +322,7 @@ function FinalPhone({
         {phase === "final_wager" ? (
           <>
             <p className="text-center text-white/70">
-              Team wager — anything from $0 to {fmtScore(maxWager)}. One wager per team
+              Team wager: anything from $0 to {fmtScore(maxWager)}. One wager per team
               (last save wins).
             </p>
             <input

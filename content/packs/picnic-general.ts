@@ -3,14 +3,14 @@ import type { Pack } from "../types";
 export const picnicGeneral: Pack = {
   id: "picnic-general",
   name: "Picnic General Mix",
-  description: "Gen-Z friendly mix for everyone — memes, emoji, food, Toronto, light tech, and a random grab bag.",
+  description: "Gen-Z friendly mix for everyone: memes, emoji, food, Toronto, light tech, and a random grab bag.",
   categories: [
     {
       name: "Certified Meme Review",
       clues: [
         { value: 200, clue: "Completing this viral audio is mandatory: someone says \"six...\" and the crowd yells this next number.", answer: "What is seven? (6-7)" },
         { value: 400, clue: "This 2019 'they did surgery on a grape'-era cartoon dog sips coffee in a burning room, saying everything is okay.", answer: "What is the 'This Is Fine' dog?" },
-        { value: 600, clue: "\"Very mindful, very cutesy\" — this other adjective led the viral 2024 TikTok catchphrase.", answer: "What is demure? (very demure)" },
+        { value: 600, clue: "\"Very mindful, very cutesy\": this other adjective led the viral 2024 TikTok catchphrase.", answer: "What is demure? (very demure)" },
         { value: 800, clue: "This baby pygmy hippo from a Thai zoo became 2024's slipperiest, most meme-able animal.", answer: "Who is Moo Deng?" },
         { value: 1000, clue: "Years before 'Despacito', this 2012 K-pop video became the first ever to pass one billion YouTube views.", answer: "What is 'Gangnam Style'?" },
       ],
@@ -21,18 +21,18 @@ export const picnicGeneral: Pack = {
         { value: 200, clue: "This is the only continent with no countries and no permanent residents.", answer: "What is Antarctica?" },
         { value: 400, clue: "In soccer, one player scoring three goals in a single match earns this.", answer: "What is a hat-trick?" },
         { value: 600, clue: "Built in 1961 and gleefully demolished 28 years later, it split a German city in two.", answer: "What is the Berlin Wall?" },
-        { value: 800, clue: "Too acidic and too dry for bacteria, this pantry staple never spoils — 3,000-year-old jars of it were still edible.", answer: "What is honey?" },
+        { value: 800, clue: "Too acidic and too dry for bacteria, this pantry staple never spoils; 3,000-year-old jars of it were still edible.", answer: "What is honey?" },
         { value: 1000, clue: "Sydney and Melbourne both wanted the job, so Australia built this compromise capital from scratch instead.", answer: "What is Canberra?" },
       ],
     },
     {
       name: "Emoji Decode",
       clues: [
-        { value: 200, clue: "🚢🧊💔 — this 1997 movie.", answer: "What is Titanic?" },
-        { value: 400, clue: "🧙‍♂️⚡🏰 — this book & movie series.", answer: "What is Harry Potter?" },
-        { value: 600, clue: "🎈🏠👴🐕 — this 2009 Pixar film.", answer: "What is Up?" },
-        { value: 800, clue: "👧🍽️🤷 — this viral TikTok 'meal' trend of snacks on a plate.", answer: "What is girl dinner?" },
-        { value: 1000, clue: "📕🐷🚜 — this 1945 Orwell novella, not the one with Big Brother.", answer: "What is Animal Farm?" },
+        { value: 200, clue: "🚢🧊💔: this 1997 movie.", answer: "What is Titanic?" },
+        { value: 400, clue: "🧙‍♂️⚡🏰: this book & movie series.", answer: "What is Harry Potter?" },
+        { value: 600, clue: "🎈🏠👴🐕: this 2009 Pixar film.", answer: "What is Up?" },
+        { value: 800, clue: "👧🍽️🤷: this viral TikTok 'meal' trend of snacks on a plate.", answer: "What is girl dinner?" },
+        { value: 1000, clue: "📕🐷🚜: this 1945 Orwell novella, not the one with Big Brother.", answer: "What is Animal Farm?" },
       ],
     },
     {

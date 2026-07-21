@@ -2,7 +2,7 @@ import type { Pack } from "../types";
 
 export const unEco: Pack = {
   id: "un-eco",
-  name: "UN Eco-Club: Planet & Sustainability",
+  name: "Planet & Sustainability",
   description: "Climate, renewables, the UN & SDGs, wildlife, waste, and the people fighting for the planet.",
   categories: [
     {

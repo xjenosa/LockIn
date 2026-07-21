@@ -1,6 +1,6 @@
 "use client";
 
-// Lightweight CSS confetti — no dependency, no network.
+// Lightweight CSS confetti: no dependency, no network.
 const PIECES = ["🎉", "🎊", "⭐", "🏆", "✨"];
 
 export default function Confetti() {

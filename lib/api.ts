@@ -152,6 +152,6 @@ export const hostResetGame = (token: string, packId?: string) =>
   rpc("host_reset_game", { p_host_token: token, p_pack_id: packId ?? null });
 
 // Ends the game and deletes the room. Every child table cascades on room_id, so
-// nothing is left behind. The host token dies with it — this is irreversible.
+// nothing is left behind. The host token dies with it; this is irreversible.
 export const hostDeleteRoom = (token: string) =>
   rpc("host_delete_room", { p_host_token: token });

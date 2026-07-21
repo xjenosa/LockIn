@@ -24,7 +24,7 @@ export function getCategoryName(pack: Pack, id: string): string {
 }
 
 // The column just played, which can't be picked again immediately. Returns null
-// when nothing is locked -- including the endgame case where every remaining
+// when nothing is locked, including the endgame case where every remaining
 // clue is in that column, since locking it there would deadlock the board.
 export function lockedCategoryIdx(room: Room, pack: Pack): number | null {
   const last = room.revealed_clue_ids[room.revealed_clue_ids.length - 1];

@@ -34,7 +34,7 @@ export default function Buzzer({
     }
   }, [room.active_clue_id, room.buzzer_open, room.buzzed_team_id, room.buzzer_arms_at]);
 
-  // Anti-spam countdown. This effect only pulses a re-render — armsIn itself is
+  // Anti-spam countdown. This effect only pulses a re-render; armsIn itself is
   // derived below, because in state it would spend the first frame after a fresh
   // buzzer_arms_at at 0 and paint a live BUZZ button that claim_buzz then
   // refuses. It stores the remaining time so React bails out once that settles

@@ -1,9 +1,9 @@
--- Buzzer — tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
+-- Buzzer: tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
 -- then functions.sql.
 --
 -- Both files are IDEMPOTENT: re-running them over a live database brings it up
 -- to date without touching existing rows. That's why there is no migrations
--- folder — after pulling changes, just run these two again in order.
+-- folder. After pulling changes, just run these two again in order.
 
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
@@ -66,7 +66,7 @@ create table if not exists final_submissions (
 );
 
 -- Scoring audit trail so a misjudged answer can be taken back. label can hold
--- the correct answer, so like final_submissions it gets NO select policy — the
+-- the correct answer, so like final_submissions it gets NO select policy. The
 -- host reads it through the host_get_score_log RPC.
 create table if not exists score_events (
   id uuid primary key default gen_random_uuid(),
@@ -132,7 +132,7 @@ create policy "public read buzzes"  on buzzes  for select using (true);
 
 -- ---------------------------------------------------------------------------
 -- Realtime: broadcast row changes for the tables clients watch. score_events is
--- deliberately excluded — broadcasting it would push answer text to every phone.
+-- deliberately excluded: broadcasting it would push answer text to every phone.
 -- ---------------------------------------------------------------------------
 do $$
 declare v_t text;

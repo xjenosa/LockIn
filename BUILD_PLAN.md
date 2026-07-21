@@ -1,8 +1,8 @@
-# Buzzer — One-Shot Build Prompt for Claude Fable 5
+# Buzzer: One-Shot Build Prompt for Claude Fable 5
 
 > **How to use this file:** Paste this entire document into Claude Fable 5 as the build prompt.
 > Provide your Supabase URL + anon key when asked (or let Fable scaffold `.env.local` for you to fill).
-> The goal is a single, complete, deployable Next.js app — built in one shot.
+> The goal is a single, complete, deployable Next.js app, built in one shot.
 
 ---
 
@@ -12,7 +12,7 @@ Build a **live, Kahoot-style buzzer Jeopardy game** for in-person events (a Kore
 
 - **One host** runs the game on a laptop and projects the Jeopardy board + questions on a big screen.
 - **Players** join from their **phones**, form **teams**, and hit a big **buzzer** to answer.
-- Answers are spoken **out loud** in person — the phone is a **buzzer + scoreboard**, not an answer-input device (except Final Jeopardy, which is typed + secret).
+- Answers are spoken **out loud** in person. The phone is a **buzzer + scoreboard**, not an answer-input device (except Final Jeopardy, which is typed + secret).
 - The host adjudicates (marks right/wrong); scores update live on a **team leaderboard**.
 - Content is **swappable question packs** so the same app works for the coding club AND the eco-club.
 
@@ -24,13 +24,13 @@ Build the **whole thing** deployable to **Vercel**, with **Supabase** (Postgres 
 
 - **Next.js (App Router) + TypeScript**
 - **Tailwind CSS** for styling
-- **Supabase** — Postgres for state, Realtime for live sync, Postgres RPC functions for atomic actions
+- **Supabase**: Postgres for state, Realtime for live sync, Postgres RPC functions for atomic actions
 - **`@supabase/supabase-js`** client
 - **`qrcode.react`** for the join QR code
 - **`next/font`** (Google) for a bold condensed display font (e.g. **Anton** or **Oswald**) to approximate the Jeopardy look
 - Deploy target: **Vercel**. Everything must run on Vercel's free tier + Supabase free tier.
 
-No separate WebSocket server — all realtime goes through Supabase. No auth provider — identity is name + team + room code (Kahoot-style).
+No separate WebSocket server; all realtime goes through Supabase. No auth provider; identity is name + team + room code (Kahoot-style).
 
 ---
 
@@ -63,19 +63,19 @@ No separate WebSocket server — all realtime goes through Supabase. No auth pro
 lobby ─▶ playing ─▶ final_wager ─▶ final_clue ─▶ final_answer ─▶ final_reveal ─▶ results
 ```
 
-- **lobby** — teams join. Host clicks Start → `playing`.
-- **playing** — board is live; host opens clues, adjudicates, awards points. When all 30 clues are revealed (or host clicks "Go to Final"), → `final_wager`.
-- **final_wager** — Final category shown; each team submits a hidden wager (0 … current team score, min 0).
-- **final_clue** — Final clue revealed; answer timer starts.
-- **final_answer** — teams type secret answers before deadline.
-- **final_reveal** — host steps through each team: reveal answer + wager, mark ✓/✗, apply ± wager.
-- **results** — final leaderboard + winner. Host can `reset_game` to play again (same or new pack).
+- **lobby**: teams join. Host clicks Start → `playing`.
+- **playing**: board is live; host opens clues, adjudicates, awards points. When all 30 clues are revealed (or host clicks "Go to Final"), → `final_wager`.
+- **final_wager**: Final category shown; each team submits a hidden wager (0 … current team score, min 0).
+- **final_clue**: Final clue revealed; answer timer starts.
+- **final_answer**: teams type secret answers before deadline.
+- **final_reveal**: host steps through each team. Reveal answer + wager, mark ✓/✗, apply ± wager.
+- **results**: final leaderboard + winner. Host can `reset_game` to play again (same or new pack).
 
 ---
 
-## 4. The Buzzer — Atomic "First to Buzz" (the critical part)
+## 4. The Buzzer: Atomic "First to Buzz" (the critical part)
 
-**Requirement:** when multiple phones buzz within milliseconds, exactly ONE team wins, decided by **server receipt order** — never a client clock. Do this with a Postgres row lock inside an RPC. `SELECT ... FOR UPDATE` on the room row serializes concurrent buzzers; the first transaction sets the winner, the rest see it's taken and lose.
+**Requirement:** when multiple phones buzz within milliseconds, exactly ONE team wins, decided by **server receipt order**, never a client clock. Do this with a Postgres row lock inside an RPC. `SELECT ... FOR UPDATE` on the room row serializes concurrent buzzers; the first transaction sets the winner, the rest see it's taken and lose.
 
 ```sql
 create or replace function claim_buzz(p_code text, p_player_id uuid, p_clue_id text)
@@ -116,7 +116,7 @@ Player buzz path: `supabase.rpc('claim_buzz', { p_code, p_player_id, p_clue_id }
 
 **After a wrong answer:** host calls `reopen_after_miss` → adds the missed team to `locked_out_team_ids`, applies the −value penalty, clears `buzzed_team_id`, keeps `buzzer_open = true` so other teams can steal. When no one is left / host gives up → reveal answer, close clue.
 
-> **Honesty note to keep in the UI:** ordering is by server receipt, so a team on faster Wi‑Fi has a tiny edge over cellular. That's standard for online buzzers and fine for a picnic — don't try to "fix" it with client timestamps (that's exploitable).
+> **Honesty note to keep in the UI:** ordering is by server receipt, so a team on faster Wi‑Fi has a tiny edge over cellular. That's standard for online buzzers and fine for a picnic. Don't try to "fix" it with client timestamps (that's exploitable).
 
 ---
 
@@ -193,13 +193,13 @@ create table buzzes (          -- audit log / "buzz order" flavor
 | `host_lock_final(p_host_token)` | host | set `final_locked = true` on all teams |
 | `host_reset_game(p_host_token)` | host | scores→0, clear revealed/final, phase→`lobby` |
 
-> **IMPORTANT — enable Realtime:** add `rooms`, `teams`, and `players` to the `supabase_realtime` publication (Supabase → Database → Replication), or clients won't receive live updates.
+> **IMPORTANT (enable Realtime):** add `rooms`, `teams`, and `players` to the `supabase_realtime` publication (Supabase → Database → Replication), or clients won't receive live updates.
 
 Clients subscribe to `postgres_changes` on `rooms` (filtered by `code`), `teams` and `players` (filtered by `room_id`). On any change, patch local state; also do a full fetch on (re)subscribe so late joiners are correct.
 
 ---
 
-## 6. Content Model — Swappable Question Packs
+## 6. Content Model: Swappable Question Packs
 
 Packs are plain TypeScript data files in `/content/packs/*.ts`, registered in `/content/packs/index.ts`. Adding a pack = drop a file + one import. This is what makes the app reusable across clubs.
 
@@ -225,24 +225,24 @@ export type Pack = {
 Rules:
 - 6 categories × 5 clues = **30 board clues** + **1 Final** per pack.
 - Difficulty rises with value (200 = easy/fun, 1000 = hard).
-- Randomly flag **1–2 clues** per pack as `dailyDouble` (or hardcode sensible ones).
-- **Image clues:** support an optional `image`. For the shipped packs, prefer **text + emoji** so nothing breaks with no internet; leave the `image` slot ready for the host to drop files into `/public/packs/...`. (A picnic may have flaky Wi‑Fi — don't hard-depend on external image URLs.)
+- Randomly flag **1-2 clues** per pack as `dailyDouble` (or hardcode sensible ones).
+- **Image clues:** support an optional `image`. For the shipped packs, prefer **text + emoji** so nothing breaks with no internet; leave the `image` slot ready for the host to drop files into `/public/packs/...`. (A picnic may have flaky Wi‑Fi, so don't hard-depend on external image URLs.)
 
 ### Ship ALL FOUR packs, fully written:
 
-**1. `picnic-general` — "Picnic General Mix"** (mixed business + CS, Gen-Z crowd)
+**1. `picnic-general`: "Picnic General Mix"** (mixed business + CS, Gen-Z crowd)
 Categories: `Certified Meme Review` · `Finish the Lyric` · `Emoji Decode` · `K-BBQ & Global Eats` · `Only in Toronto` · `Science & Tech (Lite)`
 Final: `Pop Culture of the 2020s`
 
-**2. `toronto-canada` — "Toronto & Canada"**
+**2. `toronto-canada`: "Toronto & Canada"**
 Categories: `Toronto Landmarks` · `Canadian Icons` · `The 6ix in Sports` · `Canadian Slang & Culture` · `Eh? History` · `Coast to Coast (Geography)`
 Final: `Canadian Firsts`
 
-**3. `un-eco` — "UN Eco-Club: Planet & Sustainability"**
+**3. `un-eco`: "Planet & Sustainability"**
 Categories: `Climate Change` · `Renewable Energy` · `The UN & the SDGs` · `Wildlife & Biodiversity` · `Recycling & Waste` · `Famous Environmentalists`
 Final: `Global Agreements` (Paris, Kyoto, Montreal Protocol…)
 
-**4. `coding-tech` — "Coding & Tech"** (CS-leaning bonus round)
+**4. `coding-tech`: "Coding & Tech"** (CS-leaning bonus round)
 Categories: `Programming Languages` · `Algorithms & Data Structures` · `Spot the Bug` · `Tech History` · `Internet Culture` · `Acronym Soup`
 Final: `Founders & Companies`
 
@@ -273,7 +273,7 @@ Write real, correct, genuinely fun clues in Jeopardy's answer-and-question style
 ## 9. Edge Cases & Resilience (handle these)
 
 - **Reconnect:** store `player_id` (players) and `host_token` (host) in `localStorage` keyed by room `code`; auto-resume on reload. Host reloading must not lose the game (state lives in DB).
-- **Duplicate names:** player names need not be unique; **team names are unique per room** (enforced by constraint — surface a friendly error).
+- **Duplicate names:** player names need not be unique; **team names are unique per room** (enforced by constraint; surface a friendly error).
 - **Double/spam buzz:** disable the button locally after a buzz; server still guarantees one winner via the lock. Ignore buzzes when `buzzer_open = false` or wrong `active_clue_id`.
 - **Host-only actions:** every mutating host action verifies `host_token` server-side. Players cannot open clues, award points, or advance phase even with the anon key.
 - **Late joiners:** can join mid-game (lobby closed → still allow join into a team; they just start from current score).
@@ -356,4 +356,4 @@ README.md                       # setup + deploy + how to add a pack
 
 ---
 
-**Build all of Sections 1–12 now, in one shot. Prioritize a rock-solid buzzer, correct scoring, live sync, and all four packs fully written. Keep it clean, mobile-first for players, and projector-friendly for the host.**
+**Build all of Sections 1-12 now, in one shot. Prioritize a rock-solid buzzer, correct scoring, live sync, and all four packs fully written. Keep it clean, mobile-first for players, and projector-friendly for the host.**

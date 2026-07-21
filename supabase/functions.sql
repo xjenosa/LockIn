@@ -1,4 +1,4 @@
--- Buzzer — RPC functions. Run AFTER schema.sql.
+-- Buzzer: RPC functions. Run AFTER schema.sql.
 -- All functions are SECURITY DEFINER (they bypass RLS); host functions verify
 -- host_token against room_hosts before mutating anything.
 --
@@ -89,7 +89,7 @@ revoke all on function _forget_team(uuid, uuid) from public, anon, authenticated
 
 -- Every countdown (buzzer_arms_at, clue_opened_at) is a Postgres timestamp, but
 -- it is drawn against the device clock. One reading of ours lets each client
--- correct for its own skew — without it a phone a few seconds slow arms its
+-- correct for its own skew. Without it a phone a few seconds slow arms its
 -- buzzer late and loses every race it should have won.
 create or replace function server_now()
 returns timestamptz
@@ -233,7 +233,7 @@ begin
   -- moves go through host_move_player, which is token-guarded.
   -- NOTE: this function still authenticates by p_player_id alone, exactly as
   -- claim_buzz and submit_final do, and player ids are publicly readable. A
-  -- per-player secret token would close that properly — it needs client+schema
+  -- per-player secret token would close that properly, but it needs client+schema
   -- changes, so it is left as the repo owner's call.
   if v_team.id is distinct from v_old_team then
     if v_room.phase in ('final_wager','final_clue','final_reveal','results') then
@@ -250,7 +250,7 @@ begin
   where pl.id = p_player_id;
 
   -- An abandoned team is clutter in the lobby, but mid-game it still holds a
-  -- score and a slot in the rotation — deleting it there would corrupt both.
+  -- score and a slot in the rotation, and deleting it there would corrupt both.
   if v_old_team is not null and v_old_team <> v_team.id
      and v_room.phase = 'lobby'
      and not exists (select 1 from players pl where pl.team_id = v_old_team) then
@@ -263,7 +263,7 @@ end $$;
 
 -- The critical one: atomic first-to-buzz. The FOR UPDATE row lock serializes
 -- simultaneous buzzes; the first transaction through wins, the rest see the
--- winner already set and lose. Server receipt order — client clocks never matter.
+-- winner already set and lose. Server receipt order: client clocks never matter.
 -- buzzer_arms_at is the anti-spam gate: taps before it are silently dropped,
 -- and it lives here because a client-side check is just a dare.
 create or replace function claim_buzz(p_code text, p_player_id uuid, p_clue_id text)
@@ -396,7 +396,7 @@ begin
 end $$;
 
 -- clue_opened_at is pushed to the arming moment so the answer clock only starts
--- once the buzzer is actually live — the countdown is not part of their time.
+-- once the buzzer is actually live; the countdown is not part of their time.
 create or replace function host_open_buzzer(p_host_token uuid, p_arm_seconds int default 3)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -463,7 +463,7 @@ begin
   where id = v_room.id;
 end $$;
 
--- Every score change is logged. Control no longer follows the points — the
+-- Every score change is logged. Control no longer follows the points; the
 -- rotation in host_close_clue owns that now.
 create or replace function host_award(
   p_host_token uuid,
@@ -504,7 +504,7 @@ begin
   update score_events e set reversed = true where e.id = v_ev.id;
 
   -- Undoing a miss must also lift the steal lockout, or the team stays frozen
-  -- out of a clue they were never actually wrong on — but only if the miss is on
+  -- out of a clue they were never actually wrong on, but only if the miss is on
   -- the clue that is live now. Re-judging an old one must not unlock the current.
   if v_ev.reason = 'miss' and v_ev.clue_id is not distinct from v_room.active_clue_id then
     update rooms set locked_out_team_ids = array_remove(locked_out_team_ids, v_ev.team_id)
@@ -540,7 +540,7 @@ begin
   update rooms set answer_revealed = true, buzzer_open = false where id = v_room.id;
 end $$;
 
--- Turn passes team-to-team here, not to whoever answered — one sharp player
+-- Turn passes team-to-team here, not to whoever answered: one sharp player
 -- sweeping a whole category is what killed the last playtest.
 create or replace function host_close_clue(p_host_token uuid)
 returns void

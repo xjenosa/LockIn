@@ -96,7 +96,7 @@ export default function ClueView({
             </label>
             <label className="block">
               <span className="text-white/70 text-sm">
-                Wager (max {fmtScore(maxWager)} — ask them out loud!)
+                Wager (max {fmtScore(maxWager)}; ask them out loud!)
               </span>
               <input
                 type="number"
@@ -160,7 +160,7 @@ export default function ClueView({
                 style={{ borderColor: buzzedTeam.color, backgroundColor: "rgba(0,0,0,0.45)" }}
               >
                 🔔 {buzzedTeam.name}
-                {room.buzzed_player_name ? ` — ${room.buzzed_player_name}` : ""}
+                {room.buzzed_player_name ? `: ${room.buzzed_player_name}` : ""}
               </div>
             ) : arming ? (
               // key remounts each second so every number pops on its own.
@@ -190,7 +190,7 @@ export default function ClueView({
       {isHost && (
         <div className="bg-black/50 px-4 py-3 flex flex-wrap items-center justify-center gap-2 md:gap-3">
           {/* Sits left of ✓/✗: check the answer, then adjudicate. Doubles as the
-              reveal button — hold to peek privately, tap to show the room. */}
+              reveal button: hold to peek privately, tap to show the room. */}
           <AnswerPeek text={clue.answer} revealed={room.answer_revealed} onReveal={onReveal} />
           {room.active_is_dd ? (
             <>

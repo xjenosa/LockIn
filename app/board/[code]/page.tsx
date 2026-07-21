@@ -27,7 +27,7 @@ export default function Projector() {
     return (
       <main className="min-h-dvh flex flex-col items-center justify-center gap-8 p-8">
         <h1 className="font-display text-5xl md:text-7xl text-gold text-shadow-board">BUZZER!</h1>
-        <p className="text-white/70 text-2xl">📱 Scan to join — pick or create a team</p>
+        <p className="text-white/70 text-2xl">📱 Scan to join: pick or create a team</p>
         <QRJoin code={code} big />
         <div className="flex flex-wrap gap-3 justify-center max-w-3xl">
           {teams.map((t) => (

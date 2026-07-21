@@ -43,8 +43,8 @@ import { getHostToken } from "@/lib/identity";
 import type { FinalEntry, Player, ScoreEvent, ScoreReason, Team } from "@/lib/types";
 import { useRoom } from "@/lib/useRoom";
 
-// Undo rows are unreadable as bare numbers — every award carries a label like
-// "Correct — Ancient Rome $600".
+// Undo rows are unreadable as bare numbers, so every award carries a label like
+// "Correct: Ancient Rome $600".
 const clueTitle = (pack: Pack, id: string | null) =>
   id ? `${getCategoryName(pack, id)} $${parseClueId(id)?.value ?? "?"}` : "";
 
@@ -173,7 +173,7 @@ export default function HostGame() {
 
   // ---------------- playing ----------------
   if (room.phase === "playing") {
-    // Rotation ring. Derive "next" from control_team_id rather than pick_index —
+    // Rotation ring. Derive "next" from control_team_id rather than pick_index:
     // a room that started before the migration has an empty ring until the first
     // close_clue back-fills it, and control is what everything else reads.
     // Mirror _advance_control's prune+append (teams arrive ordered by created_at)
@@ -226,7 +226,7 @@ export default function HostGame() {
               >
                 {controlTeam
                   ? `🎤 ${controlTeam.name} picks next`
-                  : "🎤 Nobody has the pick — tap a team"}
+                  : "🎤 Nobody has the pick. Tap a team"}
               </span>
               {controlTeam && nextTeam && nextTeam.id !== controlTeam.id && (
                 <button
@@ -290,7 +290,7 @@ export default function HostGame() {
                 delta,
                 dd ? "dd_correct" : "correct",
                 room.active_clue_id ?? undefined,
-                `${dd ? "Daily Double ✓" : "Correct"} — ${clueTitle(pack, room.active_clue_id)}`
+                `${dd ? "Daily Double ✓" : "Correct"}: ${clueTitle(pack, room.active_clue_id)}`
               )
                 .then(() => hostCloseClue(t))
                 .then(refreshLog);
@@ -303,7 +303,7 @@ export default function HostGame() {
                   -penalty,
                   "dd_wrong",
                   room.active_clue_id ?? undefined,
-                  `Daily Double ✗ — ${clueTitle(pack, room.active_clue_id)}`
+                  `Daily Double ✗: ${clueTitle(pack, room.active_clue_id)}`
                 )
                   .then(() => hostRevealAnswer(t))
                   .then(refreshLog);
@@ -451,7 +451,7 @@ export default function HostGame() {
           <Leaderboard teams={teams} />
         </div>
         {/* The biggest swing in the game is judged here, and the card is gone the
-            instant it's tapped — this is the only way back from a mis-tap. */}
+            instant it's tapped. This is the only way back from a mis-tap. */}
         <div className="mt-8 w-full max-w-xl text-left">
           <ScoreHistory
             pack={pack}
@@ -538,7 +538,7 @@ const REASON_TEXT: Record<ScoreReason, string> = {
   manual: "Manual adjustment",
 };
 
-// Host-only — labels can hold the correct answer, so this never renders on the
+// Host-only: labels can hold the correct answer, so this never renders on the
 // projector or a phone. The ✕ is the "Au is gold, not aluminium" recovery path.
 function ScoreHistory({
   pack,
@@ -585,7 +585,7 @@ function ScoreHistory({
             <p className="pl-4 truncate text-white/45 text-xs">
               {ev.label ??
                 `${REASON_TEXT[ev.reason] ?? ev.reason}${
-                  ev.clue_id ? ` — ${clueTitle(pack, ev.clue_id)}` : ""
+                  ev.clue_id ? `: ${clueTitle(pack, ev.clue_id)}` : ""
                 }`}
             </p>
           </div>
@@ -634,7 +634,7 @@ function LobbyTeamCard({
           {team.name}
         </div>
         <div className="text-white/60 text-sm mt-1">
-          {members.map((p) => p.name).join(", ") || "—"}
+          {members.map((p) => p.name).join(", ") || "None yet"}
         </div>
       </div>
     );
