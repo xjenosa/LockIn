@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { serverNow } from "@/lib/serverClock";
 
 // Countdown derived from a shared DB timestamp so every screen agrees.
 // Purely visual — the host adjudicates; nothing auto-fires at zero.
@@ -22,12 +23,14 @@ export default function Timer({
     }
     // openedAt sits in the FUTURE while the buzzer is arming — that window
     // belongs to the buzzer countdown, so stay hidden until the clock starts.
-    // Clamped either way so a skewed client clock can never draw past 100%.
+    // serverNow() because openedAt is the DB's clock: on a slow device Date.now()
+    // would keep the bar hidden for the whole skew after the clue went live.
+    // Clamped either way so a residual offset can never draw past 100%.
     const start = new Date(openedAt).getTime();
     const end = start + seconds * 1000;
     const tick = () =>
       setRemaining(
-        Date.now() < start ? null : Math.min(seconds, Math.max(0, (end - Date.now()) / 1000))
+        serverNow() < start ? null : Math.min(seconds, Math.max(0, (end - serverNow()) / 1000))
       );
     tick();
     const id = setInterval(tick, 100);

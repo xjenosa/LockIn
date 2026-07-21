@@ -91,6 +91,16 @@ export default function Play() {
     void refetch().then(() => setSavedTeamId(null));
   };
 
+  // Team membership is the only ACL on the Final Round submissions and on the
+  // steal lockout, so update_player refuses a switch in those states. Offer
+  // name-only editing there rather than a picker that can only fail.
+  const teamLocked =
+    room.active_clue_id !== null ||
+    room.phase === "final_wager" ||
+    room.phase === "final_clue" ||
+    room.phase === "final_reveal" ||
+    room.phase === "results";
+
   // The edit sheet lives inside `header` so every phase — including the ones
   // that only receive it as a prop — can reach it.
   const header = (
@@ -122,36 +132,45 @@ export default function Play() {
       </header>
 
       {editing && (
-        <div className="fixed inset-0 z-50 bg-black/70 overflow-y-auto flex items-end sm:items-center justify-center p-4">
-          <div className="w-full max-w-md rounded-3xl bg-boarddark border border-white/15 p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-2xl text-gold">Name &amp; team</h2>
-              <button
-                onClick={() => setEditing(false)}
-                aria-label="Close"
-                className="text-white/50 text-2xl px-2 leading-none"
-              >
-                ✕
-              </button>
+        // The scroll container must not align its child to end/center: overflow
+        // past the START edge isn't scrollable, so on a short phone (or any
+        // landscape) the name field and ✕ would be cut off and unreachable.
+        // The min-h-full wrapper does the aligning instead.
+        <div className="fixed inset-0 z-50 bg-black/70 overflow-y-auto p-4">
+          <div className="min-h-full flex flex-col justify-end sm:justify-center items-center">
+            <div className="w-full max-w-md rounded-3xl bg-boarddark border border-white/15 p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-2xl text-gold">
+                  {teamLocked ? "Your name" : "Name & team"}
+                </h2>
+                <button
+                  onClick={() => setEditing(false)}
+                  aria-label="Close"
+                  className="text-white/50 text-2xl px-2 leading-none"
+                >
+                  ✕
+                </button>
+              </div>
+              <TeamJoin
+                code={code}
+                teams={teams}
+                initialName={identity.name}
+                initialTeamId={myTeam.id}
+                submitLabel="Save ✓"
+                nameOnly={teamLocked}
+                onCancel={() => setEditing(false)}
+                onSubmit={(v) =>
+                  updatePlayer({
+                    playerId: identity.playerId,
+                    name: v.name,
+                    teamId: v.teamId,
+                    newTeamName: v.newTeamName,
+                    newTeamColor: v.newTeamColor,
+                  })
+                }
+                onJoined={applyEdit}
+              />
             </div>
-            <TeamJoin
-              code={code}
-              teams={teams}
-              initialName={identity.name}
-              initialTeamId={myTeam.id}
-              submitLabel="Save ✓"
-              onCancel={() => setEditing(false)}
-              onSubmit={(v) =>
-                updatePlayer({
-                  playerId: identity.playerId,
-                  name: v.name,
-                  teamId: v.teamId,
-                  newTeamName: v.newTeamName,
-                  newTeamColor: v.newTeamColor,
-                })
-              }
-              onJoined={applyEdit}
-            />
           </div>
         </div>
       )}

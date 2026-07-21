@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import type { Pack } from "@/content/types";
 import { fmtScore, getCategoryName, getClue, parseClueId } from "@/lib/game";
+import { serverNow } from "@/lib/serverClock";
 import type { Room, Team } from "@/lib/types";
+import AnswerPeek from "./AnswerPeek";
 import Timer from "./Timer";
 
 // Full-screen clue. Used by the host (isHost -> control bar) and the
@@ -41,22 +43,21 @@ export default function ClueView({
 
   const [wagerInput, setWagerInput] = useState("");
   const [ddTeamInput, setDDTeamInput] = useState(room.dd_team_id ?? "");
-  const [peek, setPeek] = useState(false);
 
-  // Arming window ticks off the shared buzzer_arms_at so every phone, the
-  // host and the projector count down to the same instant.
-  const [armLeft, setArmLeft] = useState(0);
+  // Arming window ticks off the shared buzzer_arms_at so every phone, the host
+  // and the projector count down to the same instant. Derived during render like
+  // the phone's (effect state shows one stale frame), against the DB clock; the
+  // effect only pulses a re-render, and settles at 0 so React can bail out.
+  const [, setTick] = useState(0);
   useEffect(() => {
-    if (!room.buzzer_arms_at) {
-      setArmLeft(0);
-      return;
-    }
-    const end = new Date(room.buzzer_arms_at).getTime();
-    const tick = () => setArmLeft(Math.max(0, (end - Date.now()) / 1000));
-    tick();
-    const id = setInterval(tick, 100);
+    if (!room.buzzer_arms_at) return;
+    const at = Date.parse(room.buzzer_arms_at);
+    const id = setInterval(() => setTick(Math.max(0, at - serverNow())), 100);
     return () => clearInterval(id);
   }, [room.buzzer_arms_at]);
+  const armLeft = room.buzzer_arms_at
+    ? Math.max(0, (Date.parse(room.buzzer_arms_at) - serverNow()) / 1000)
+    : 0;
   const arming = room.buzzer_open && armLeft > 0;
 
   if (!clue) return null;
@@ -186,28 +187,8 @@ export default function ClueView({
 
       {isHost && (
         <div className="bg-black/50 px-4 py-3 flex flex-wrap items-center justify-center gap-2 md:gap-3">
-          {/* This laptop IS the projected screen, so the answer stays blurred until
-              the host hovers. It keeps its box either way — a bar that reflows on
-              hover is its own bug. Sits left of ✓/✗: check, then adjudicate. */}
-          {!room.answer_revealed && (
-            <div
-              onMouseEnter={() => setPeek(true)}
-              onMouseLeave={() => setPeek(false)}
-              onTouchStart={() => setPeek(true)}
-              onTouchEnd={() => setPeek(false)}
-              onTouchCancel={() => setPeek(false)}
-              className="rounded-xl bg-white/10 border border-white/25 px-4 py-3 flex items-center gap-2 select-none cursor-help"
-            >
-              <span className="text-white/60 text-sm whitespace-nowrap">👁 Hover to peek</span>
-              <span
-                className={`font-bold max-w-[36ch] transition ${
-                  peek ? "text-gold" : "blur-sm opacity-40"
-                }`}
-              >
-                {clue.answer}
-              </span>
-            </div>
-          )}
+          {/* Sits left of ✓/✗: check the answer, then adjudicate. */}
+          {!room.answer_revealed && <AnswerPeek text={clue.answer} />}
           {room.active_is_dd ? (
             <>
               <button

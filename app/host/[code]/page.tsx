@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import AnswerPeek from "@/components/AnswerPeek";
 import Board from "@/components/Board";
 import ClueView from "@/components/ClueView";
 import Confetti from "@/components/Confetti";
@@ -167,7 +168,13 @@ export default function HostGame() {
     // Rotation ring. Derive "next" from control_team_id rather than pick_index —
     // a room that started before the migration has an empty ring until the first
     // close_clue back-fills it, and control is what everything else reads.
-    const ring = room.pick_order ?? [];
+    // Mirror _advance_control's prune+append (teams arrive ordered by created_at)
+    // or the label names the wrong team the moment someone joins mid-game.
+    const stored = room.pick_order ?? [];
+    const ring = [
+      ...stored.filter((id) => teams.some((x) => x.id === id)),
+      ...teams.filter((x) => !stored.includes(x.id)).map((x) => x.id),
+    ];
     const nextPickId = ring.length
       ? ring[(ring.indexOf(room.control_team_id ?? "") + 1) % ring.length]
       : null;
@@ -193,18 +200,27 @@ export default function HostGame() {
               </button>
             </div>
           </div>
-          {controlTeam && (
+          {/* Renders without a control team too: those chips are the only
+              hostSetControl UI, and a room that started before the migration has
+              nobody holding the pick until the host seeds the ring here. */}
+          {teams.length > 0 && (
             <div
               className="mb-3 rounded-2xl border-2 px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2"
-              style={{ borderColor: controlTeam.color, backgroundColor: `${controlTeam.color}1f` }}
+              style={
+                controlTeam
+                  ? { borderColor: controlTeam.color, backgroundColor: `${controlTeam.color}1f` }
+                  : { borderColor: "rgba(255,255,255,0.2)" }
+              }
             >
               <span
                 className="font-display text-xl md:text-2xl text-shadow-board"
-                style={{ color: controlTeam.color }}
+                style={controlTeam ? { color: controlTeam.color } : undefined}
               >
-                🎤 {controlTeam.name} picks next
+                {controlTeam
+                  ? `🎤 ${controlTeam.name} picks next`
+                  : "🎤 Nobody has the pick — tap a team"}
               </span>
-              {nextTeam && nextTeam.id !== controlTeam.id && (
+              {controlTeam && nextTeam && nextTeam.id !== controlTeam.id && (
                 <button
                   onClick={() => void hostSetControl(t, nextTeam.id)}
                   className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-semibold"
@@ -219,7 +235,7 @@ export default function HostGame() {
                     onClick={() => void hostSetControl(t, team.id)}
                     title={`Give the pick to ${team.name}`}
                     className={`rounded-full px-2.5 py-1 text-xs font-semibold border ${
-                      team.id === controlTeam.id ? "border-white/70" : "border-white/15 opacity-60"
+                      team.id === controlTeam?.id ? "border-white/70" : "border-white/15 opacity-60"
                     }`}
                     style={{ backgroundColor: `${team.color}33` }}
                   >
@@ -254,6 +270,9 @@ export default function HostGame() {
             teams={teams}
             isHost
             onOpenBuzzer={() => void hostOpenBuzzer(t)}
+            // Every adjudication refreshes the log itself: waiting on the realtime
+            // round trip leaves a stale top row under the host's ✕ for up to 5s,
+            // and a $0 Daily Double moves no score, so nothing would fire at all.
             onCorrect={(teamId, delta) => {
               const dd = room.active_is_dd;
               void hostAward(
@@ -263,7 +282,9 @@ export default function HostGame() {
                 dd ? "dd_correct" : "correct",
                 room.active_clue_id ?? undefined,
                 `${dd ? "Daily Double ✓" : "Correct"} — ${clueTitle(pack, room.active_clue_id)}`
-              ).then(() => hostCloseClue(t));
+              )
+                .then(() => hostCloseClue(t))
+                .then(refreshLog);
             }}
             onWrong={(teamId, penalty) => {
               if (room.active_is_dd) {
@@ -274,9 +295,11 @@ export default function HostGame() {
                   "dd_wrong",
                   room.active_clue_id ?? undefined,
                   `Daily Double ✗ — ${clueTitle(pack, room.active_clue_id)}`
-                ).then(() => hostRevealAnswer(t));
+                )
+                  .then(() => hostRevealAnswer(t))
+                  .then(refreshLog);
               } else {
-                void hostReopenAfterMiss(t, penalty); // logs its own 'miss' event
+                void hostReopenAfterMiss(t, penalty).then(refreshLog); // logs its own 'miss' event
               }
             }}
             onReveal={() => void hostRevealAnswer(t)}
@@ -320,9 +343,8 @@ export default function HostGame() {
         <div className="w-full max-w-xl">
           <Timer openedAt={room.clue_opened_at} seconds={room.timer_seconds} />
         </div>
-        <p className="text-white/50 mt-2 text-sm">
-          Answer: <span className="text-white/80">{pack.final.answer}</span>
-        </p>
+        {/* Every team is looking at this screen for a full 60 seconds. */}
+        <AnswerPeek text={pack.final.answer} className="mt-4" />
         <button
           onClick={() => void hostSetPhase(t, "final_reveal")}
           className="mt-6 rounded-2xl bg-gold text-boarddark px-8 py-4 font-display text-2xl"
@@ -342,9 +364,7 @@ export default function HostGame() {
     return (
       <Center>
         <p className="font-display text-gold text-xl tracking-widest uppercase">The moment of truth</p>
-        <p className="text-white/60 mt-1 text-sm">
-          Correct response: <span className="text-gold">{pack.final.answer}</span>
-        </p>
+        <AnswerPeek text={pack.final.answer} className="mt-3" />
         {!done && entry ? (
           <div className="mt-8 w-full max-w-xl rounded-3xl bg-black/40 border border-white/15 p-8 space-y-4 animate-pop" key={entry.team_id}>
             <div className="flex items-center gap-3 justify-center text-3xl font-bold">
@@ -363,7 +383,8 @@ export default function HostGame() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => {
-                      void hostAward(t, entry.team_id, entry.wager, "final", undefined, "Final Round ✓");
+                      void hostAward(t, entry.team_id, entry.wager, "final", undefined, "Final Round ✓")
+                        .then(refreshLog);
                       setAnswerShown(false);
                       setRevealIdx((i) => i + 1);
                     }}
@@ -373,7 +394,8 @@ export default function HostGame() {
                   </button>
                   <button
                     onClick={() => {
-                      void hostAward(t, entry.team_id, -entry.wager, "final", undefined, "Final Round ✗");
+                      void hostAward(t, entry.team_id, -entry.wager, "final", undefined, "Final Round ✗")
+                        .then(refreshLog);
                       setAnswerShown(false);
                       setRevealIdx((i) => i + 1);
                     }}
@@ -403,8 +425,30 @@ export default function HostGame() {
             🏆 Show final results!
           </button>
         )}
+        {revealIdx > 0 && (
+          // Undoing in the history panel reverses the score; this brings the card
+          // back so a mis-tapped ✓/✗ can actually be re-judged.
+          <button
+            onClick={() => {
+              setAnswerShown(false);
+              setRevealIdx((i) => Math.max(0, i - 1));
+            }}
+            className="mt-4 text-white/50 underline text-sm"
+          >
+            ← previous team
+          </button>
+        )}
         <div className="mt-8 w-full max-w-xl">
           <Leaderboard teams={teams} />
+        </div>
+        {/* The biggest swing in the game is judged here, and the card is gone the
+            instant it's tapped — this is the only way back from a mis-tap. */}
+        <div className="mt-8 w-full max-w-xl text-left">
+          <ScoreHistory
+            pack={pack}
+            log={log}
+            onUndo={(id) => void hostUndoEvent(t, id).then(refreshLog)}
+          />
         </div>
       </Center>
     );
@@ -423,6 +467,14 @@ export default function HostGame() {
       )}
       <div className="w-full max-w-xl mt-6">
         <Leaderboard teams={teams} big />
+      </div>
+      {/* Last stop for "that ✗ was wrong" before the reset wipes the log. */}
+      <div className="mt-8 w-full max-w-xl text-left">
+        <ScoreHistory
+          pack={pack}
+          log={log}
+          onUndo={(id) => void hostUndoEvent(t, id).then(refreshLog)}
+        />
       </div>
       <button
         onClick={() => {

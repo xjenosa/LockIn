@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { syncServerClock } from "./serverClock";
 import { supabase } from "./supabaseClient";
 import type { Player, Room, Team } from "./types";
 
@@ -47,6 +48,7 @@ export function useRoom(code: string) {
 
   useEffect(() => {
     void fetchAll();
+    void syncServerClock();   // countdowns compare DB timestamps to this device's clock
 
     const channel = supabase
       .channel(`room-${code}`)

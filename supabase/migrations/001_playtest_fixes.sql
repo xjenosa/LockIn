@@ -102,6 +102,16 @@ revoke all on function _forget_team(uuid, uuid) from public, anon, authenticated
 
 -- =========================== players =======================================
 
+-- Every countdown (buzzer_arms_at, clue_opened_at) is a Postgres timestamp, but
+-- it is drawn against the device clock. One reading of ours lets each client
+-- correct for its own skew — without it a phone a few seconds slow arms its
+-- buzzer late and loses every race it should have won.
+create or replace function server_now()
+returns timestamptz
+language sql stable security definer set search_path = public as $$
+  select now()
+$$;
+
 -- Fix a typo'd name or defect to another team after joining. Same friendly
 -- error codes as join_room so the client keeps one mapping table.
 create or replace function update_player(
@@ -151,6 +161,23 @@ begin
   else                                              -- name-only edit: keep the current team
     select t.* into v_team from teams t where t.id = v_old_team;
     if not found then raise exception 'TEAM_NAME_REQUIRED'; end if;
+  end if;
+
+  -- Team membership is the only ACL on final_submissions and on the steal
+  -- lockout, so switching teams freezes while a clue is live and for the whole
+  -- Final Round; renaming yourself stays available in every phase. Mid-game
+  -- moves go through host_move_player, which is token-guarded.
+  -- NOTE: this function still authenticates by p_player_id alone, exactly as
+  -- claim_buzz and submit_final do, and player ids are publicly readable. A
+  -- per-player secret token would close that properly — it needs client+schema
+  -- changes, so it is left as the repo owner's call.
+  if v_team.id is distinct from v_old_team then
+    if v_room.phase in ('final_wager','final_clue','final_reveal','results') then
+      raise exception 'TEAM_LOCKED_IN_FINAL';
+    end if;
+    if v_room.active_clue_id is not null then
+      raise exception 'TEAM_LOCKED_MID_CLUE';
+    end if;
   end if;
 
   update players pl set
@@ -303,6 +330,8 @@ begin
     buzzed_player_name = null,
     buzzer_open = true,
     buzzer_arms_at = v_arms,
+    answer_revealed = false,      -- the host may have revealed it to explain the miss;
+                                  -- the steal cannot run with it up on the projector
     clue_opened_at = v_arms       -- fresh timer for the steal, starting when it arms
   where id = v_room.id;
 end $$;
@@ -348,8 +377,9 @@ begin
   update score_events e set reversed = true where e.id = v_ev.id;
 
   -- Undoing a miss must also lift the steal lockout, or the team stays frozen
-  -- out of a clue they were never actually wrong on.
-  if v_ev.reason = 'miss' then
+  -- out of a clue they were never actually wrong on — but only if the miss is on
+  -- the clue that is live now. Re-judging an old one must not unlock the current.
+  if v_ev.reason = 'miss' and v_ev.clue_id is not distinct from v_room.active_clue_id then
     update rooms set locked_out_team_ids = array_remove(locked_out_team_ids, v_ev.team_id)
      where id = v_room.id;
   end if;
@@ -408,7 +438,11 @@ begin
     answer_revealed = false,
     clue_opened_at = null
   where id = v_room.id;
-  perform _advance_control(v_room.id);
+  -- Only rotate if this call is the one that actually closed a clue. A double
+  -- tap on "← Back to board" would otherwise skip a team's turn entirely.
+  if v_room.active_clue_id is not null then
+    perform _advance_control(v_room.id);
+  end if;
 end $$;
 
 -- Host override: hand the pick to a specific team (skipped turn, late joiner,
