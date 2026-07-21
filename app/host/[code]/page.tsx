@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AnswerPeek from "@/components/AnswerPeek";
 import Board from "@/components/Board";
@@ -10,11 +10,12 @@ import Confetti from "@/components/Confetti";
 import Leaderboard from "@/components/Leaderboard";
 import QRJoin from "@/components/QRJoin";
 import Timer from "@/components/Timer";
-import { getPack, packs } from "@/content/packs";
+import { getPack } from "@/content/packs";
 import type { Pack } from "@/content/types";
 import {
   hostAward,
   hostCloseClue,
+  hostDeleteRoom,
   hostGetFinals,
   hostGetScoreLog,
   hostMovePlayer,
@@ -22,7 +23,6 @@ import {
   hostOpenClue,
   hostRemovePlayer,
   hostReopenAfterMiss,
-  hostResetGame,
   hostRevealAnswer,
   hostSetControl,
   hostSetDDWager,
@@ -50,6 +50,7 @@ const clueTitle = (pack: Pack, id: string | null) =>
 
 export default function HostGame() {
   const params = useParams<{ code: string }>();
+  const router = useRouter();
   const code = (params.code ?? "").toUpperCase();
   const { room, teams, players, notFound } = useRoom(code);
   const [token, setToken] = useState<string | null>(null);
@@ -484,38 +485,29 @@ export default function HostGame() {
           onUndo={(id) => void hostUndoEvent(t, id).then(refreshLog)}
         />
       </div>
-      <div className="mt-10 w-full max-w-xl text-left">
-        <h3 className="font-display text-xl text-center mb-1">Play another round ↺</h3>
-        <p className="text-white/50 text-sm text-center mb-4">
-          Same teams, scores back to zero. Pick a fresh set of categories.
-        </p>
-        <div className="space-y-2">
-          {packs.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => {
-                if (
-                  confirm(
-                    `Start a new game with "${p.name}"?\n\nScores reset to zero and everyone returns to the lobby.`
-                  )
-                )
-                  void hostResetGame(t, p.id);
-              }}
-              className={`w-full rounded-xl px-4 py-3 text-left border transition hover:brightness-125 ${
-                p.id === room.pack_id ? "border-white/20 bg-black/20" : "border-gold/60 bg-gold/10"
-              }`}
-            >
-              <div className="font-semibold flex items-center gap-2">
-                {p.name}
-                {p.id === room.pack_id && (
-                  <span className="text-white/40 text-xs font-normal">· just played</span>
-                )}
-              </div>
-              <div className="text-white/50 text-xs mt-0.5">{p.description}</div>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Leaving is also the cleanup: the room and everything under it is
+          deleted, so finished games don't pile up in the database forever. */}
+      <button
+        onClick={() => {
+          if (
+            !confirm(
+              "Finish and delete this game?\n\nScores and teams are erased and room " +
+                `${code} stops working. Players will need a new code to play again.`
+            )
+          )
+            return;
+          void hostDeleteRoom(t)
+            .catch(() => {})
+            .then(() => router.push("/"));
+        }}
+        className="mt-10 rounded-2xl bg-gold text-boarddark px-8 py-4 font-display text-2xl"
+      >
+        🏠 Finish & back to home
+      </button>
+      <p className="text-white/40 text-xs mt-3 max-w-sm">
+        Deletes this game from the database. Starting another round gives a new
+        room code, so everyone re-scans the QR.
+      </p>
     </Center>
   );
 }

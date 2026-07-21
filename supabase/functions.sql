@@ -742,3 +742,28 @@ begin
     clue_opened_at = null
   where id = v_room.id;
 end $$;
+
+-- The host leaving the results screen ends the game and wipes it. Child tables
+-- all cascade on room_id, so deleting the room row removes everything.
+create or replace function host_delete_room(p_host_token uuid)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare v_room rooms;
+begin
+  v_room := _room_by_host(p_host_token);
+  delete from rooms where id = v_room.id;
+end $$;
+
+-- Safety net for games the host never closed out. Not exposed to clients: it
+-- takes no secret, so anyone could call it and wipe live games.
+create or replace function delete_stale_rooms(p_days int default 7)
+returns int
+language plpgsql security definer set search_path = public as $$
+declare v_n int;
+begin
+  delete from rooms where created_at < now() - make_interval(days => greatest(p_days, 1));
+  get diagnostics v_n = row_count;
+  return v_n;
+end $$;
+
+revoke all on function delete_stale_rooms(int) from public, anon, authenticated;
