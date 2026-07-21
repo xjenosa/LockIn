@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Pack } from "@/content/types";
 import { fmtScore, getCategoryName, getClue, parseClueId } from "@/lib/game";
 import type { Room, Team } from "@/lib/types";
@@ -41,6 +41,23 @@ export default function ClueView({
 
   const [wagerInput, setWagerInput] = useState("");
   const [ddTeamInput, setDDTeamInput] = useState(room.dd_team_id ?? "");
+  const [peek, setPeek] = useState(false);
+
+  // Arming window ticks off the shared buzzer_arms_at so every phone, the
+  // host and the projector count down to the same instant.
+  const [armLeft, setArmLeft] = useState(0);
+  useEffect(() => {
+    if (!room.buzzer_arms_at) {
+      setArmLeft(0);
+      return;
+    }
+    const end = new Date(room.buzzer_arms_at).getTime();
+    const tick = () => setArmLeft(Math.max(0, (end - Date.now()) / 1000));
+    tick();
+    const id = setInterval(tick, 100);
+    return () => clearInterval(id);
+  }, [room.buzzer_arms_at]);
+  const arming = room.buzzer_open && armLeft > 0;
 
   if (!clue) return null;
 
@@ -142,6 +159,16 @@ export default function ClueView({
                 🔔 {buzzedTeam.name}
                 {room.buzzed_player_name ? ` — ${room.buzzed_player_name}` : ""}
               </div>
+            ) : arming ? (
+              // key remounts each second so every number pops on its own.
+              <div key={Math.ceil(armLeft)} className="animate-pop flex flex-col items-center">
+                <p className="font-display uppercase tracking-widest text-white/70 text-lg md:text-2xl">
+                  Get ready…
+                </p>
+                <p className="font-display text-white text-shadow-board text-6xl md:text-8xl leading-none">
+                  {Math.ceil(armLeft)}
+                </p>
+              </div>
             ) : room.buzzer_open ? (
               <p className="text-green-300 text-xl md:text-3xl animate-pulse">Buzzers open!</p>
             ) : !room.answer_revealed ? (
@@ -159,6 +186,28 @@ export default function ClueView({
 
       {isHost && (
         <div className="bg-black/50 px-4 py-3 flex flex-wrap items-center justify-center gap-2 md:gap-3">
+          {/* This laptop IS the projected screen, so the answer stays blurred until
+              the host hovers. It keeps its box either way — a bar that reflows on
+              hover is its own bug. Sits left of ✓/✗: check, then adjudicate. */}
+          {!room.answer_revealed && (
+            <div
+              onMouseEnter={() => setPeek(true)}
+              onMouseLeave={() => setPeek(false)}
+              onTouchStart={() => setPeek(true)}
+              onTouchEnd={() => setPeek(false)}
+              onTouchCancel={() => setPeek(false)}
+              className="rounded-xl bg-white/10 border border-white/25 px-4 py-3 flex items-center gap-2 select-none cursor-help"
+            >
+              <span className="text-white/60 text-sm whitespace-nowrap">👁 Hover to peek</span>
+              <span
+                className={`font-bold max-w-[36ch] transition ${
+                  peek ? "text-gold" : "blur-sm opacity-40"
+                }`}
+              >
+                {clue.answer}
+              </span>
+            </div>
+          )}
           {room.active_is_dd ? (
             <>
               <button
@@ -208,14 +257,6 @@ export default function ClueView({
           <button onClick={onClose} className="rounded-xl bg-gold text-boarddark px-5 py-3 font-bold">
             ← Back to board
           </button>
-          {isHost && !room.answer_revealed && (
-            <span className="w-full text-center text-white/50 text-xs md:hidden">
-              Answer: {clue.answer}
-            </span>
-          )}
-          <span className="hidden md:block w-full text-center text-white/50 text-sm">
-            Answer: {clue.answer}
-          </span>
         </div>
       )}
     </div>

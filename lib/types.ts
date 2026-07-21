@@ -19,7 +19,10 @@ export type Room = {
   timer_seconds: number;
   locked_out_team_ids: string[];
   revealed_clue_ids: string[];
-  control_team_id: string | null;
+  control_team_id: string | null;   // whose turn it is to pick = pick_order[pick_index]
+  buzzer_arms_at: string | null;    // buzzer goes live here; taps before it are ignored server-side
+  pick_order: string[];             // rotation ring of team ids
+  pick_index: number;               // 0-based index into pick_order
   active_is_dd: boolean;
   dd_team_id: string | null;
   dd_wager: number | null;
@@ -50,4 +53,27 @@ export type FinalEntry = {
   score: number;
   wager: number;
   answer: string;
+};
+
+export type ScoreReason =
+  | "correct"
+  | "miss"
+  | "dd_correct"
+  | "dd_wrong"
+  | "final"
+  | "manual";
+
+// One row of the host-only scoring audit trail. label may contain the correct
+// answer, so this never reaches a player screen.
+export type ScoreEvent = {
+  id: string;
+  team_id: string;
+  team_name: string;
+  color: string;
+  delta: number;
+  reason: ScoreReason;
+  clue_id: string | null;
+  label: string | null;
+  reversed: boolean;
+  created_at: string;
 };

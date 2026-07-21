@@ -9,10 +9,10 @@ export const unEco: Pack = {
       name: "Climate Change",
       clues: [
         { value: 200, clue: "This gas, CO2, is the main driver of human-caused global warming.", answer: "What is carbon dioxide?" },
-        { value: 400, clue: "The Paris Agreement aims to keep warming 'well below' 2°C, ideally to this figure.", answer: "What is 1.5 degrees Celsius?" },
-        { value: 600, clue: "Melting land ice and warming oceans cause this slow-motion threat to coastal cities.", answer: "What is sea level rise?" },
-        { value: 800, clue: "This UN scientific body's assessment reports are the gold standard of climate science.", answer: "What is the IPCC (Intergovernmental Panel on Climate Change)?" },
-        { value: 1000, clue: "Thawing permafrost releases this greenhouse gas, ~80x more potent than CO2 over 20 years.", answer: "What is methane?" },
+        { value: 400, clue: "Melting land ice and warming oceans cause this slow-motion threat to coastal cities.", answer: "What is sea level rise?" },
+        { value: 600, clue: "Thawing permafrost releases this greenhouse gas, ~80x more potent than CO2 over 20 years.", answer: "What is methane?" },
+        { value: 800, clue: "The Paris Agreement aims to keep warming 'well below' 2°C, ideally to this figure.", answer: "What is 1.5 degrees Celsius?" },
+        { value: 1000, clue: "This UN scientific body's assessment reports are the gold standard of climate science.", answer: "What is the IPCC (Intergovernmental Panel on Climate Change)?" },
       ],
     },
     {
@@ -28,9 +28,9 @@ export const unEco: Pack = {
     {
       name: "The UN & the SDGs",
       clues: [
-        { value: 200, clue: "The Sustainable Development Goals count this many goals.", answer: "What is 17?" },
+        { value: 200, clue: "The UN's headquarters sit beside the East River in this city.", answer: "What is New York City?" },
         { value: 400, clue: "The SDGs are also called Agenda ____, for their target year.", answer: "What is 2030?" },
-        { value: 600, clue: "The UN's headquarters sit beside the East River in this city.", answer: "What is New York City?" },
+        { value: 600, clue: "The Sustainable Development Goals count this many goals.", answer: "What is 17?" },
         { value: 800, clue: "In climate summits like COP28, COP stands for this.", answer: "What is Conference of the Parties?", dailyDouble: true },
         { value: 1000, clue: "This Portuguese diplomat has served as UN Secretary-General since 2017.", answer: "Who is António Guterres?" },
       ],
@@ -38,21 +38,21 @@ export const unEco: Pack = {
     {
       name: "Wildlife & Biodiversity",
       clues: [
-        { value: 200, clue: "This black-and-white bear is the WWF's logo.", answer: "What is the giant panda?" },
-        { value: 400, clue: "Bees, butterflies and bats do this job that makes a third of our food possible.", answer: "What is pollination?" },
-        { value: 600, clue: "Warming seas cause this whitening stress reaction in reefs.", answer: "What is coral bleaching?" },
-        { value: 800, clue: "Often called 'the lungs of the planet', this South American rainforest is the world's largest.", answer: "What is the Amazon?" },
+        { value: 200, clue: "Often called 'the lungs of the planet', this South American rainforest is the world's largest.", answer: "What is the Amazon?" },
+        { value: 400, clue: "This black-and-white bear is the WWF's logo.", answer: "What is the giant panda?" },
+        { value: 600, clue: "Bees, butterflies and bats do this job that makes a third of our food possible.", answer: "What is pollination?" },
+        { value: 800, clue: "Warming seas cause this whitening stress reaction in reefs.", answer: "What is coral bleaching?" },
         { value: 1000, clue: "Sea otters and wolves are classic examples of this type of species whose loss collapses an ecosystem.", answer: "What is a keystone species?" },
       ],
     },
     {
       name: "Recycling & Waste",
       clues: [
-        { value: 200, clue: "Reduce, Reuse, and this third R.", answer: "What is Recycle?" },
-        { value: 400, clue: "Banana peels and coffee grounds belong in this bin to become soil.", answer: "What is compost (the green bin)?" },
-        { value: 600, clue: "This 'patch' of floating plastic swirls in a gyre between California and Hawaii.", answer: "What is the Great Pacific Garbage Patch?" },
-        { value: 800, clue: "Old phones and laptops become this fastest-growing waste stream.", answer: "What is e-waste?" },
-        { value: 1000, clue: "These plastic fragments under 5 mm have been found in rain, fish, and human blood.", answer: "What are microplastics?", dailyDouble: true },
+        { value: 200, clue: "Banana peels and coffee grounds belong in this bin to become soil.", answer: "What is compost (the green bin)?" },
+        { value: 400, clue: "These plastic fragments under 5 mm have been found in rain, fish, and human blood.", answer: "What are microplastics?" },
+        { value: 600, clue: "Old phones and laptops become this fastest-growing waste stream.", answer: "What is e-waste?" },
+        { value: 800, clue: "This 'patch' of floating plastic swirls in a gyre between California and Hawaii.", answer: "What is the Great Pacific Garbage Patch?" },
+        { value: 1000, clue: "Designing waste out from the start, this two-word model replaces the linear 'take, make, waste' system.", answer: "What is the circular economy?", dailyDouble: true },
       ],
     },
     {

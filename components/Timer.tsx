@@ -20,8 +20,15 @@ export default function Timer({
       setRemaining(null);
       return;
     }
-    const end = new Date(openedAt).getTime() + seconds * 1000;
-    const tick = () => setRemaining(Math.max(0, (end - Date.now()) / 1000));
+    // openedAt sits in the FUTURE while the buzzer is arming — that window
+    // belongs to the buzzer countdown, so stay hidden until the clock starts.
+    // Clamped either way so a skewed client clock can never draw past 100%.
+    const start = new Date(openedAt).getTime();
+    const end = start + seconds * 1000;
+    const tick = () =>
+      setRemaining(
+        Date.now() < start ? null : Math.min(seconds, Math.max(0, (end - Date.now()) / 1000))
+      );
     tick();
     const id = setInterval(tick, 100);
     return () => clearInterval(id);

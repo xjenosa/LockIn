@@ -13,7 +13,10 @@ create table if not exists rooms (
   timer_seconds int not null default 12,
   locked_out_team_ids uuid[] not null default '{}',
   revealed_clue_ids text[] not null default '{}',
-  control_team_id uuid,                          -- team that answered last correct clue (default DD team)
+  control_team_id uuid,                          -- team whose turn it is to pick (default DD team)
+  buzzer_arms_at timestamptz,                    -- buzzer goes live at this moment; earlier taps are ignored
+  pick_order uuid[] not null default '{}',       -- rotation ring of team ids
+  pick_index int not null default 0,             -- whose turn it is: pick_order[pick_index + 1]
   active_is_dd boolean not null default false,
   dd_team_id uuid,
   dd_wager int,
@@ -57,6 +60,25 @@ create table if not exists final_submissions (
   updated_at timestamptz not null default now()
 );
 
+-- Scoring audit trail so a misjudged answer can be taken back. label can hold
+-- the correct answer, so like final_submissions it gets NO select policy — the
+-- host reads it through the host_get_score_log RPC.
+create table if not exists score_events (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references rooms(id) on delete cascade,
+  team_id uuid not null references teams(id) on delete cascade,
+  delta int not null,
+  reason text not null constraint score_events_reason_check
+    check (reason in ('correct','miss','dd_correct','dd_wrong','final','manual')),
+  clue_id text,
+  label text,
+  reversed boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists score_events_room_created_idx
+  on score_events (room_id, created_at desc);
+
 -- Audit log of every buzz (winner-or-not), for fun stats.
 create table if not exists buzzes (
   id uuid primary key default gen_random_uuid(),
@@ -70,14 +92,15 @@ create table if not exists buzzes (
 -- ---------------------------------------------------------------------------
 -- Row Level Security: public (anon) may READ live game state, never write.
 -- All writes go through SECURITY DEFINER functions in functions.sql.
--- room_hosts and final_submissions have RLS enabled with no policies at all:
--- invisible to clients.
+-- room_hosts, final_submissions and score_events have RLS enabled with no
+-- policies at all: invisible to clients.
 -- ---------------------------------------------------------------------------
 alter table rooms enable row level security;
 alter table room_hosts enable row level security;
 alter table teams enable row level security;
 alter table players enable row level security;
 alter table final_submissions enable row level security;
+alter table score_events enable row level security;
 alter table buzzes enable row level security;
 
 create policy "public read rooms"   on rooms   for select using (true);
@@ -86,7 +109,8 @@ create policy "public read players" on players for select using (true);
 create policy "public read buzzes"  on buzzes  for select using (true);
 
 -- ---------------------------------------------------------------------------
--- Realtime: broadcast row changes for the tables clients watch.
+-- Realtime: broadcast row changes for the tables clients watch. score_events is
+-- deliberately excluded — broadcasting it would push answer text to every phone.
 -- (If this errors with "already member", that's fine — it's already enabled.)
 -- ---------------------------------------------------------------------------
 alter publication supabase_realtime add table rooms;

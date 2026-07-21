@@ -7,8 +7,7 @@ import Confetti from "@/components/Confetti";
 import Leaderboard from "@/components/Leaderboard";
 import TeamJoin from "@/components/TeamJoin";
 import Timer from "@/components/Timer";
-import { getPack } from "@/content/packs";
-import { getMyFinal, submitFinal } from "@/lib/api";
+import { getMyFinal, submitFinal, updatePlayer } from "@/lib/api";
 import { fmtScore } from "@/lib/game";
 import { getPlayerIdentity, setPlayerIdentity, type PlayerIdentity } from "@/lib/identity";
 import { useRoom } from "@/lib/useRoom";
@@ -16,24 +15,41 @@ import { useRoom } from "@/lib/useRoom";
 export default function Play() {
   const params = useParams<{ code: string }>();
   const code = (params.code ?? "").toUpperCase();
-  const { room, teams, players, notFound } = useRoom(code);
+  const { room, teams, players, notFound, refetch } = useRoom(code);
   const [identity, setIdentity] = useState<PlayerIdentity | null>(null);
   const [ready, setReady] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [savedTeamId, setSavedTeamId] = useState<string | null>(null);
+  const [staleIdentity, setStaleIdentity] = useState(false);
 
   useEffect(() => {
     setIdentity(getPlayerIdentity(code));
     setReady(true);
   }, [code]);
 
-  // If our player row vanished (host reset to a fresh room), re-join.
   const me = useMemo(
     () => (identity ? players.find((p) => p.id === identity.playerId) ?? null : null),
     [players, identity]
   );
-  const myTeam = useMemo(
-    () => (me?.team_id ? teams.find((t) => t.id === me.team_id) ?? null : null),
-    [teams, me]
-  );
+
+  // A just-saved edit wins until the refetch lands; after that the server row
+  // does, since the host can move people between teams too.
+  const myTeam = useMemo(() => {
+    const id = savedTeamId ?? me?.team_id ?? identity?.teamId ?? null;
+    return id ? teams.find((t) => t.id === id) ?? null : null;
+  }, [teams, me, identity, savedTeamId]);
+
+  // Our player row vanishes for good on a host reset, but it also blips missing
+  // mid-refetch — only bounce to the join screen once it stays missing, or a
+  // hiccup spawns a duplicate player.
+  useEffect(() => {
+    if (!identity || me) {
+      setStaleIdentity(false);
+      return;
+    }
+    const t = setTimeout(() => setStaleIdentity(true), players.length ? 1500 : 5000);
+    return () => clearTimeout(t);
+  }, [identity, me, players.length]);
 
   if (notFound)
     return (
@@ -44,7 +60,7 @@ export default function Play() {
     );
   if (!room || !ready) return <Center>Loading…</Center>;
 
-  if (!identity || (players.length > 0 && !me && identity)) {
+  if (!identity || staleIdentity) {
     // Not joined yet (or stale identity from a previous game on this code)
     return (
       <main className="min-h-screen p-6 flex flex-col justify-center">
@@ -63,29 +79,83 @@ export default function Play() {
     );
   }
 
-  if (!myTeam)
-    return (
-      <Center>
-        <p>Getting your team…</p>
-      </Center>
-    );
+  if (!myTeam) return <ResolvingTeam onRejoin={() => setIdentity(null)} />;
 
   const rank = [...teams].sort((a, b) => b.score - a.score).findIndex((t) => t.id === myTeam.id) + 1;
 
+  const applyEdit = (id: PlayerIdentity) => {
+    setPlayerIdentity(code, id);
+    setIdentity(id);
+    setSavedTeamId(id.teamId); // header flips now instead of a realtime roundtrip later
+    setEditing(false);
+    void refetch().then(() => setSavedTeamId(null));
+  };
+
+  // The edit sheet lives inside `header` so every phase — including the ones
+  // that only receive it as a prop — can reach it.
   const header = (
-    <header className="flex items-center gap-3 rounded-2xl bg-black/30 border border-white/10 p-3">
-      <span className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: myTeam.color }} />
-      <div className="flex-1 min-w-0">
-        <p className="font-bold truncate">{myTeam.name}</p>
-        <p className="text-white/50 text-xs truncate">{identity.name}</p>
-      </div>
-      <div className="text-right">
-        <p className={`font-display text-2xl ${myTeam.score < 0 ? "text-red-400" : "text-gold"}`}>
-          {fmtScore(myTeam.score)}
-        </p>
-        <p className="text-white/50 text-xs">#{rank} of {teams.length}</p>
-      </div>
-    </header>
+    <>
+      <header className="flex items-center gap-3 rounded-2xl bg-black/30 border border-white/10 p-3">
+        <button
+          onClick={() => setEditing(true)}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left"
+        >
+          <span className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: myTeam.color }} />
+          <span className="flex-1 min-w-0">
+            <span className="block font-bold truncate">{myTeam.name}</span>
+            <span className="block text-white/50 text-xs truncate">{identity.name}</span>
+          </span>
+        </button>
+        <div className="text-right">
+          <p className={`font-display text-2xl ${myTeam.score < 0 ? "text-red-400" : "text-gold"}`}>
+            {fmtScore(myTeam.score)}
+          </p>
+          <p className="text-white/50 text-xs">#{rank} of {teams.length}</p>
+        </div>
+        <button
+          onClick={() => setEditing(true)}
+          aria-label="Change your name or team"
+          className="shrink-0 h-10 w-10 rounded-xl border border-white/20 text-lg active:scale-95"
+        >
+          ✏️
+        </button>
+      </header>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 bg-black/70 overflow-y-auto flex items-end sm:items-center justify-center p-4">
+          <div className="w-full max-w-md rounded-3xl bg-boarddark border border-white/15 p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-2xl text-gold">Name &amp; team</h2>
+              <button
+                onClick={() => setEditing(false)}
+                aria-label="Close"
+                className="text-white/50 text-2xl px-2 leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <TeamJoin
+              code={code}
+              teams={teams}
+              initialName={identity.name}
+              initialTeamId={myTeam.id}
+              submitLabel="Save ✓"
+              onCancel={() => setEditing(false)}
+              onSubmit={(v) =>
+                updatePlayer({
+                  playerId: identity.playerId,
+                  name: v.name,
+                  teamId: v.teamId,
+                  newTeamName: v.newTeamName,
+                  newTeamColor: v.newTeamColor,
+                })
+              }
+              onJoined={applyEdit}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 
   // ---------------- phases ----------------
@@ -259,6 +329,31 @@ function FinalPhone({
         {error && <p className="text-center text-red-300">{error}</p>}
       </div>
     </main>
+  );
+}
+
+// Our team row can lag a refetch, but if it never resolves the player needs a
+// way back to the join screen instead of staring at a spinner forever.
+function ResolvingTeam({ onRejoin }: { onRejoin: () => void }) {
+  const [stuck, setStuck] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setStuck(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  return (
+    <Center>
+      <p>Getting your team…</p>
+      {stuck && (
+        <button
+          onClick={onRejoin}
+          className="mt-6 rounded-xl border border-white/25 px-5 py-3 text-white/70"
+        >
+          Stuck? Rejoin →
+        </button>
+      )}
+    </Center>
   );
 }
 

@@ -10,6 +10,7 @@ Kahoot-style **team buzzer trivia** for in-person events. The host projects the 
 2. In the Supabase **SQL Editor**, paste & run [`supabase/schema.sql`](supabase/schema.sql), then [`supabase/functions.sql`](supabase/functions.sql).
    - The schema also enables Realtime on `rooms` / `teams` / `players`. If those last three `alter publication` lines error with "already a member", that's fine.
    - Verify under **Database → Replication** that the `supabase_realtime` publication includes `rooms`, `teams`, `players`. (There's a 5-second polling fallback, but realtime makes buzzes feel instant.)
+   - **Already have a project from before the playtest fixes?** Those two files are for a fresh install. Run [`supabase/migrations/001_playtest_fixes.sql`](supabase/migrations/001_playtest_fixes.sql) instead — it upgrades a live database in place and is safe to run twice.
 3. **Keys** — Project Settings → API: copy the **Project URL** and the **anon/publishable key**.
 4. Copy `.env.local.example` → `.env.local` and fill both values. The URL must be the **bare** project URL (no `/rest/v1/`).
 

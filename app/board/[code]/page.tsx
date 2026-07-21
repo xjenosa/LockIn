@@ -45,10 +45,36 @@ export default function Projector() {
   }
 
   if (room.phase === "playing") {
+    // Turn order rotates team-to-team, so the room can only follow along if the
+    // projector says whose pick it is.
+    const controlTeam = teams.find((t) => t.id === room.control_team_id) ?? null;
     return (
       <main className="min-h-screen p-4 md:p-8 flex flex-col gap-4">
         <div className="flex-1">
           <Board pack={pack} room={room} />
+        </div>
+        <div className="flex justify-center">
+          {controlTeam ? (
+            <div
+              key={controlTeam.id}
+              className="animate-pop rounded-2xl border-4 px-6 py-2 md:px-10 md:py-3 flex flex-wrap items-baseline justify-center gap-x-4 gap-y-1"
+              style={{ borderColor: controlTeam.color, backgroundColor: "rgba(0,0,0,0.45)" }}
+            >
+              <span
+                className="font-display text-shadow-board text-3xl md:text-5xl"
+                style={{ color: controlTeam.color }}
+              >
+                {controlTeam.name}
+              </span>
+              <span className="text-white/70 uppercase tracking-widest text-sm md:text-xl">
+                picks next
+              </span>
+            </div>
+          ) : (
+            <p className="font-display uppercase tracking-widest text-white/50 text-xl md:text-3xl">
+              Host picks next
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-2 justify-center">
           {[...teams]

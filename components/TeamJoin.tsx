@@ -1,32 +1,65 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { joinRoom } from "@/lib/api";
 import { TEAM_COLORS } from "@/lib/game";
 import type { Team } from "@/lib/types";
 
-const FRIENDLY: Record<string, string> = {
+// Shared so callers that run their own RPC (the play page's edit sheet calls
+// update_player) surface the exact same wording.
+export const FRIENDLY: Record<string, string> = {
   ROOM_NOT_FOUND: "Room not found — check the code!",
   TEAM_NAME_TAKEN: "That team name is taken — pick another.",
   TEAM_NAME_REQUIRED: "Give your team a name!",
+  TEAM_NOT_FOUND: "That team is gone — pick another one.",
+  PLAYER_NOT_FOUND: "We lost your player — rejoin the room.",
 };
 
+// Two modes: a fresh join (default) and editing an existing player, where the
+// caller supplies onSubmit so the same UI drives update_player instead.
 export default function TeamJoin({
   code,
   teams,
   onJoined,
+  initialName = "",
+  initialTeamId = "",
+  submitLabel,
+  onCancel,
+  onSubmit,
 }: {
   code: string;
   teams: Team[];
   onJoined: (identity: { playerId: string; teamId: string; name: string }) => void;
+  initialName?: string;
+  initialTeamId?: string;
+  submitLabel?: string;
+  onCancel?: () => void;
+  onSubmit?: (v: {
+    name: string;
+    teamId?: string;
+    newTeamName?: string;
+    newTeamColor?: string;
+  }) => Promise<{ player_id: string; team_id: string; team_name: string }>;
 }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   const [mode, setMode] = useState<"join" | "create">(teams.length ? "join" : "create");
   const [teamName, setTeamName] = useState("");
   const [color, setColor] = useState(TEAM_COLORS[Math.floor(Math.random() * TEAM_COLORS.length)]);
-  const [selectedTeam, setSelectedTeam] = useState<string>("");
+  const [selectedTeam, setSelectedTeam] = useState<string>(initialTeamId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const modeTouched = useRef(false);
+
+  // teams is [] on first render (useRoom hasn't fetched yet) and a useState
+  // initializer never re-runs — without this everyone lands on "Create a team".
+  useEffect(() => {
+    if (!modeTouched.current && teams.length) setMode("join");
+  }, [teams.length]);
+
+  const pickMode = (m: "join" | "create") => {
+    modeTouched.current = true;
+    setMode(m);
+  };
 
   const submit = async () => {
     if (!name.trim()) return setError("Enter your name first!");
@@ -35,13 +68,20 @@ export default function TeamJoin({
     setBusy(true);
     setError(null);
     try {
-      const res = await joinRoom({
-        code,
-        playerName: name.trim(),
-        teamName: mode === "create" ? teamName.trim() : undefined,
-        teamColor: color,
-        existingTeamId: mode === "join" ? selectedTeam : undefined,
-      });
+      const res = onSubmit
+        ? await onSubmit({
+            name: name.trim(),
+            teamId: mode === "join" ? selectedTeam : undefined,
+            newTeamName: mode === "create" ? teamName.trim() : undefined,
+            newTeamColor: mode === "create" ? color : undefined,
+          })
+        : await joinRoom({
+            code,
+            playerName: name.trim(),
+            teamName: mode === "create" ? teamName.trim() : undefined,
+            teamColor: color,
+            existingTeamId: mode === "join" ? selectedTeam : undefined,
+          });
       onJoined({ playerId: res.player_id, teamId: res.team_id, name: name.trim() });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
@@ -65,7 +105,7 @@ export default function TeamJoin({
 
       <div className="grid grid-cols-2 gap-2">
         <button
-          onClick={() => setMode("join")}
+          onClick={() => pickMode("join")}
           disabled={!teams.length}
           className={`rounded-xl py-3 font-semibold border ${
             mode === "join" ? "bg-gold text-boarddark border-gold" : "border-white/20 disabled:opacity-40"
@@ -74,7 +114,7 @@ export default function TeamJoin({
           Join a team
         </button>
         <button
-          onClick={() => setMode("create")}
+          onClick={() => pickMode("create")}
           className={`rounded-xl py-3 font-semibold border ${
             mode === "create" ? "bg-gold text-boarddark border-gold" : "border-white/20"
           }`}
@@ -95,6 +135,7 @@ export default function TeamJoin({
             >
               <span className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
               <span className="font-semibold">{t.name}</span>
+              {t.id === initialTeamId && <span className="ml-auto text-white/40 text-xs">current</span>}
             </button>
           ))}
         </div>
@@ -133,8 +174,18 @@ export default function TeamJoin({
         disabled={busy}
         className="w-full rounded-2xl bg-green-500 py-4 font-display text-2xl disabled:opacity-50"
       >
-        {busy ? "Joining…" : "Let's go! 🚀"}
+        {busy ? (onSubmit ? "Saving…" : "Joining…") : submitLabel ?? "Let's go! 🚀"}
       </button>
+
+      {onCancel && (
+        <button
+          onClick={onCancel}
+          disabled={busy}
+          className="w-full rounded-xl border border-white/20 py-3 text-white/70 disabled:opacity-50"
+        >
+          Cancel
+        </button>
+      )}
     </div>
   );
 }
