@@ -1,27 +1,33 @@
--- Buzzer — OPTIONAL maintenance. Not needed for setup; schema.sql + functions.sql
--- are all you need to run the app.
+-- Buzzer — maintenance. Optional: not needed to set the app up, and safe to run
+-- at any time, including during a party. Run it whenever you want to tidy up.
 --
--- Finished games normally clean themselves up: "Finish & back to home" on the
--- results screen calls host_delete_room, which deletes the room and cascades to
--- its teams, players, buzzes and score_events. This file is for the leftovers —
+-- Games normally clean themselves up: "Finish & back to home" on the results
+-- screen calls host_delete_room, which deletes the room and cascades to its
+-- teams, players, buzzes and score_events. This file catches what that misses —
 -- games abandoned mid-round when a laptop was shut or a tab was lost.
 
--- ---------------------------------------------------------------------------
--- One-off: wipe every game currently in the database.
--- DANGER: this includes any game in progress. Don't run it during a party.
--- ---------------------------------------------------------------------------
+-- Finished games where the host closed the tab instead of using the button.
+delete from rooms where phase = 'results';
+
+-- Games nobody has touched in a day. A session lasts about two hours, so this
+-- can never catch a live game. Returns how many it removed.
+select delete_stale_rooms(24) as abandoned_rooms_deleted;
+
+-- What's left.
+select count(*) as rooms_remaining,
+       count(*) filter (where created_at > now() - interval '2 hours') as probably_live
+  from rooms;
+
+
+-- ===========================================================================
+-- Everything below is opt-in. Uncomment only if you mean it.
+-- ===========================================================================
+
+-- Wipe EVERY game, including one in progress. Only for a full reset.
 -- delete from rooms;
 
--- ---------------------------------------------------------------------------
--- One-off: drop only games older than a week, leaving anything recent alone.
--- Safer than the above and usually what you want.
--- ---------------------------------------------------------------------------
--- select delete_stale_rooms(7);
-
--- ---------------------------------------------------------------------------
--- Automate the weekly purge. Needs the pg_cron extension, which Supabase offers
--- under Database -> Extensions. Entirely optional — the results-screen button
--- already covers games that end normally.
--- ---------------------------------------------------------------------------
+-- Run the stale purge automatically at 4am daily. Needs the pg_cron extension
+-- from Database -> Extensions. The results-screen button already covers games
+-- that end normally, so this is belt-and-braces.
 -- create extension if not exists pg_cron;
--- select cron.schedule('buzzer-purge-stale', '0 4 * * *', $cron$ select delete_stale_rooms(7); $cron$);
+-- select cron.schedule('buzzer-purge-stale', '0 4 * * *', $cron$ select delete_stale_rooms(24); $cron$);

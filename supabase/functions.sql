@@ -757,14 +757,19 @@ begin
   delete from rooms where id = v_room.id;
 end $$;
 
--- Safety net for games the host never closed out. Not exposed to clients: it
--- takes no secret, so anyone could call it and wipe live games.
-create or replace function delete_stale_rooms(p_days int default 7)
+-- Safety net for games the host never closed out. Hours, not days: a party game
+-- is over in about two, so "older than a few hours" is the useful granularity
+-- and days is too coarse to clear the same evening's mess.
+-- Not exposed to clients: it takes no secret, so anyone could call it and wipe
+-- live games. Returns the number of rooms deleted.
+drop function if exists delete_stale_rooms(int);   -- renamed p_days -> p_hours
+
+create or replace function delete_stale_rooms(p_hours int default 24)
 returns int
 language plpgsql security definer set search_path = public as $$
 declare v_n int;
 begin
-  delete from rooms where created_at < now() - make_interval(days => greatest(p_days, 1));
+  delete from rooms where created_at < now() - make_interval(hours => greatest(p_hours, 1));
   get diagnostics v_n = row_count;
   return v_n;
 end $$;
