@@ -143,6 +143,12 @@ begin
   select * into v_room from rooms where rooms.code = upper(trim(p_code));
   if not found then raise exception 'ROOM_NOT_FOUND'; end if;
 
+  -- Late joiners mid-game are fine, but from the Final Round on a new team can
+  -- only appear with $0 and no wager. host_reset_game reopens the room.
+  if v_room.phase in ('final_wager', 'final_clue', 'final_reveal', 'results') then
+    raise exception 'GAME_CLOSED';
+  end if;
+
   if p_existing_team_id is not null then
     select * into v_team from teams t
      where t.id = p_existing_team_id and t.room_id = v_room.id;

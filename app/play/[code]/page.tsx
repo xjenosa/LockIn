@@ -61,6 +61,20 @@ export default function Play() {
   if (!room || !ready) return <Center>Loading…</Center>;
 
   if (!identity || staleIdentity) {
+    // The lobby closes at the Final Round — show that rather than a join form
+    // the server is guaranteed to reject with GAME_CLOSED.
+    const closed = ["final_wager", "final_clue", "final_reveal", "results"].includes(room.phase);
+    if (closed)
+      return (
+        <Center>
+          <p className="text-3xl">🔒 This game has finished</p>
+          <p className="text-white/60 mt-2">
+            Joining is closed for the Final Round. If your host starts another
+            round, this page will let you back in.
+          </p>
+        </Center>
+      );
+
     // Not joined yet (or stale identity from a previous game on this code)
     return (
       <main className="min-h-dvh p-6 flex flex-col justify-center">

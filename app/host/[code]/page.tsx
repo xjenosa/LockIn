@@ -10,7 +10,7 @@ import Confetti from "@/components/Confetti";
 import Leaderboard from "@/components/Leaderboard";
 import QRJoin from "@/components/QRJoin";
 import Timer from "@/components/Timer";
-import { getPack } from "@/content/packs";
+import { getPack, packs } from "@/content/packs";
 import type { Pack } from "@/content/types";
 import {
   hostAward,
@@ -484,14 +484,38 @@ export default function HostGame() {
           onUndo={(id) => void hostUndoEvent(t, id).then(refreshLog)}
         />
       </div>
-      <button
-        onClick={() => {
-          if (confirm("Reset scores and return everyone to the lobby?")) void hostResetGame(t);
-        }}
-        className="mt-8 rounded-xl bg-white/10 px-6 py-3"
-      >
-        Play again (same teams) ↺
-      </button>
+      <div className="mt-10 w-full max-w-xl text-left">
+        <h3 className="font-display text-xl text-center mb-1">Play another round ↺</h3>
+        <p className="text-white/50 text-sm text-center mb-4">
+          Same teams, scores back to zero. Pick a fresh set of categories.
+        </p>
+        <div className="space-y-2">
+          {packs.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => {
+                if (
+                  confirm(
+                    `Start a new game with "${p.name}"?\n\nScores reset to zero and everyone returns to the lobby.`
+                  )
+                )
+                  void hostResetGame(t, p.id);
+              }}
+              className={`w-full rounded-xl px-4 py-3 text-left border transition hover:brightness-125 ${
+                p.id === room.pack_id ? "border-white/20 bg-black/20" : "border-gold/60 bg-gold/10"
+              }`}
+            >
+              <div className="font-semibold flex items-center gap-2">
+                {p.name}
+                {p.id === room.pack_id && (
+                  <span className="text-white/40 text-xs font-normal">· just played</span>
+                )}
+              </div>
+              <div className="text-white/50 text-xs mt-0.5">{p.description}</div>
+            </button>
+          ))}
+        </div>
+      </div>
     </Center>
   );
 }

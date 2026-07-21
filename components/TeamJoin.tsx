@@ -15,6 +15,7 @@ export const FRIENDLY: Record<string, string> = {
   PLAYER_NOT_FOUND: "We lost your player — rejoin the room.",
   TEAM_LOCKED_IN_FINAL: "Teams are locked for the Final Round — ask your host.",
   TEAM_LOCKED_MID_CLUE: "Can't switch teams mid-clue — try between clues.",
+  GAME_CLOSED: "This game has already finished — ask your host to start a new round.",
 };
 
 // Two modes: a fresh join (default) and editing an existing player, where the
