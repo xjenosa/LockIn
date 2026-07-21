@@ -20,7 +20,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${anton.variable} ${inter.variable}`}>
-      <body className="font-sans bg-boarddark text-white min-h-screen">{children}</body>
+      <body className="font-sans bg-boarddark text-white min-h-dvh">{children}</body>
     </html>
   );
 }

@@ -112,7 +112,7 @@ export default function TeamJoin({
           onChange={(e) => setName(e.target.value)}
           maxLength={24}
           className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 p-4 text-lg"
-          placeholder="e.g. Maxi"
+          placeholder="e.g. Max"
         />
       </label>
 
@@ -172,7 +172,7 @@ export default function TeamJoin({
                   onChange={(e) => setTeamName(e.target.value)}
                   maxLength={28}
                   className="mt-1 w-full rounded-xl bg-white/10 border border-white/20 p-4 text-lg"
-                  placeholder="e.g. Git Blamers"
+                  placeholder="e.g. Codexperts"
                 />
               </label>
               <div className="flex gap-2 flex-wrap">

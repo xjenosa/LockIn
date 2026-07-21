@@ -63,7 +63,7 @@ export default function Play() {
   if (!identity || staleIdentity) {
     // Not joined yet (or stale identity from a previous game on this code)
     return (
-      <main className="min-h-screen p-6 flex flex-col justify-center">
+      <main className="min-h-dvh p-6 flex flex-col justify-center">
         <h1 className="font-display text-4xl text-gold text-shadow-board text-center mb-8">
           Join room {code}
         </h1>
@@ -180,7 +180,7 @@ export default function Play() {
   // ---------------- phases ----------------
   if (room.phase === "lobby") {
     return (
-      <main className="min-h-screen p-4 flex flex-col gap-4">
+      <main className="min-h-dvh p-4 flex flex-col gap-4">
         {header}
         <Center>
           <p className="text-3xl">🎉 You&apos;re in!</p>
@@ -219,7 +219,7 @@ export default function Play() {
 
   if (room.phase === "final_reveal") {
     return (
-      <main className="min-h-screen p-4 flex flex-col gap-4">
+      <main className="min-h-dvh p-4 flex flex-col gap-4">
         {header}
         <Center>
           <p className="text-3xl">👀 Look up!</p>
@@ -236,7 +236,7 @@ export default function Play() {
   const winner = [...teams].sort((a, b) => b.score - a.score)[0];
   const weWon = winner?.id === myTeam.id;
   return (
-    <main className="min-h-screen p-4 flex flex-col gap-4">
+    <main className="min-h-dvh p-4 flex flex-col gap-4">
       {weWon && <Confetti />}
       {header}
       <Center>
@@ -301,7 +301,7 @@ function FinalPhone({
   };
 
   return (
-    <main className="min-h-screen p-4 flex flex-col gap-4">
+    <main className="min-h-dvh p-4 flex flex-col gap-4">
       {header}
       <div className="flex-1 flex flex-col justify-center gap-4 max-w-md w-full mx-auto">
         <h1 className="font-display text-3xl text-gold text-center">FINAL ROUND</h1>

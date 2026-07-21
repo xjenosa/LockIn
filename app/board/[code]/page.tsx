@@ -9,7 +9,7 @@ import Leaderboard from "@/components/Leaderboard";
 import QRJoin from "@/components/QRJoin";
 import Timer from "@/components/Timer";
 import { getPack } from "@/content/packs";
-import { fmtScore } from "@/lib/game";
+import { fmtScore, lockedCategoryIdx } from "@/lib/game";
 import { useRoom } from "@/lib/useRoom";
 
 // Read-only projector view. Put THIS on the big screen; keep host controls
@@ -25,7 +25,7 @@ export default function Projector() {
 
   if (room.phase === "lobby") {
     return (
-      <main className="min-h-screen flex flex-col items-center justify-center gap-8 p-8">
+      <main className="min-h-dvh flex flex-col items-center justify-center gap-8 p-8">
         <h1 className="font-display text-5xl md:text-7xl text-gold text-shadow-board">BUZZER!</h1>
         <p className="text-white/70 text-2xl">📱 Scan to join — pick or create a team</p>
         <QRJoin code={code} big />
@@ -49,9 +49,9 @@ export default function Projector() {
     // projector says whose pick it is.
     const controlTeam = teams.find((t) => t.id === room.control_team_id) ?? null;
     return (
-      <main className="min-h-screen p-4 md:p-8 flex flex-col gap-4">
+      <main className="min-h-dvh p-4 md:p-8 flex flex-col gap-4">
         <div className="flex-1">
-          <Board pack={pack} room={room} />
+          <Board pack={pack} room={room} lockedCatIdx={lockedCategoryIdx(room, pack)} />
         </div>
         <div className="flex justify-center">
           {controlTeam ? (
@@ -153,7 +153,7 @@ export default function Projector() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-8 text-center">
+    <main className="min-h-dvh flex flex-col items-center justify-center p-8 text-center">
       {children}
     </main>
   );

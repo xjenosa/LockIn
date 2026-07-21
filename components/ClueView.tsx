@@ -66,6 +66,9 @@ export default function ClueView({
   if (ddWagerStage) {
     const chosen = teams.find((t) => t.id === (ddTeamInput || room.dd_team_id));
     const maxWager = chosen ? Math.max(chosen.score, 1000) : 1000;
+    // A blank box used to parse to 0 and silently lock in a wager of nothing,
+    // so the team played the square for free. Require a deliberate number.
+    const wagerNum = /^\d+$/.test(wagerInput.trim()) ? parseInt(wagerInput.trim(), 10) : null;
     return (
       <div className="fixed inset-0 bg-board flex flex-col items-center justify-center p-6 text-center gap-6 z-40">
         <p className="font-display uppercase text-gold text-xl md:text-2xl tracking-widest">{category}</p>
@@ -107,13 +110,12 @@ export default function ClueView({
             <button
               onClick={() => {
                 const teamId = ddTeamInput || room.dd_team_id;
-                const w = Math.min(Math.max(parseInt(wagerInput || "0", 10) || 0, 0), maxWager);
-                if (teamId) onDDSet?.(teamId, w);
+                if (teamId && wagerNum !== null) onDDSet?.(teamId, Math.min(wagerNum, maxWager));
               }}
-              disabled={!(ddTeamInput || room.dd_team_id)}
+              disabled={!(ddTeamInput || room.dd_team_id) || wagerNum === null}
               className="w-full rounded-xl bg-gold text-boarddark font-display text-2xl py-3 disabled:opacity-40"
             >
-              Lock wager & reveal clue
+              {wagerNum === null ? "Enter a wager…" : `Lock ${fmtScore(Math.min(wagerNum, maxWager))} & reveal clue`}
             </button>
           </div>
         ) : (

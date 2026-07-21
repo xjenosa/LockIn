@@ -26,7 +26,7 @@ export default function HostCreate() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center gap-8 p-6">
+    <main className="min-h-dvh flex flex-col items-center justify-center gap-8 p-6">
       <h1 className="font-display text-4xl md:text-6xl text-gold text-shadow-board">HOST A GAME</h1>
 
       <div className="w-full max-w-lg space-y-3">

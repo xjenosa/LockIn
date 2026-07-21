@@ -31,7 +31,14 @@ import {
   hostUndoEvent,
   hostUpdateTeam,
 } from "@/lib/api";
-import { fmtScore, boardDone, getCategoryName, parseClueId, TEAM_COLORS } from "@/lib/game";
+import {
+  fmtScore,
+  boardDone,
+  getCategoryName,
+  lockedCategoryIdx,
+  parseClueId,
+  TEAM_COLORS,
+} from "@/lib/game";
 import { getHostToken } from "@/lib/identity";
 import type { FinalEntry, Player, ScoreEvent, ScoreReason, Team } from "@/lib/types";
 import { useRoom } from "@/lib/useRoom";
@@ -111,7 +118,7 @@ export default function HostGame() {
   // ---------------- lobby ----------------
   if (room.phase === "lobby") {
     return (
-      <main className="min-h-screen p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center justify-center">
+      <main className="min-h-dvh p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center justify-center">
         <div className="text-center">
           <h1 className="font-display text-4xl md:text-6xl text-gold text-shadow-board mb-6">
             {pack.name}
@@ -182,7 +189,7 @@ export default function HostGame() {
     const nextTeam = teams.find((x) => x.id === nextPickId) ?? null;
 
     return (
-      <main className="min-h-screen p-3 md:p-6 flex flex-col lg:flex-row gap-4">
+      <main className="min-h-dvh p-3 md:p-6 flex flex-col lg:flex-row gap-4">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-3">
             <h1 className="font-display text-xl md:text-2xl text-gold">{pack.name}</h1>
@@ -248,6 +255,7 @@ export default function HostGame() {
           <Board
             pack={pack}
             room={room}
+            lockedCatIdx={lockedCategoryIdx(room, pack)}
             onPick={(id, _value, isDD) => void hostOpenClue(t, id, isDD)}
           />
         </div>
@@ -490,7 +498,7 @@ export default function HostGame() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+    <main className="min-h-dvh flex flex-col items-center justify-center p-6 text-center">
       {children}
     </main>
   );

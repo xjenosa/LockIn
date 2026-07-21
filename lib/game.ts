@@ -23,6 +23,20 @@ export function getCategoryName(pack: Pack, id: string): string {
   return parsed ? pack.categories[parsed.catIdx]?.name ?? "" : "";
 }
 
+// The column just played, which can't be picked again immediately. Returns null
+// when nothing is locked -- including the endgame case where every remaining
+// clue is in that column, since locking it there would deadlock the board.
+export function lockedCategoryIdx(room: Room, pack: Pack): number | null {
+  const last = room.revealed_clue_ids[room.revealed_clue_ids.length - 1];
+  const idx = last ? parseClueId(last)?.catIdx ?? null : null;
+  if (idx === null) return null;
+  const openElsewhere = pack.categories.some(
+    (cat, i) =>
+      i !== idx && cat.clues.some((c) => !room.revealed_clue_ids.includes(clueId(i, c.value)))
+  );
+  return openElsewhere ? idx : null;
+}
+
 export function boardDone(room: Room, pack: Pack): boolean {
   const total = pack.categories.reduce((n, c) => n + c.clues.length, 0);
   return room.revealed_clue_ids.length >= total;
