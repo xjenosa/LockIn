@@ -189,8 +189,9 @@ export default function ClueView({
 
       {isHost && (
         <div className="bg-black/50 px-4 py-3 flex flex-wrap items-center justify-center gap-2 md:gap-3">
-          {/* Sits left of ✓/✗: check the answer, then adjudicate. */}
-          {!room.answer_revealed && <AnswerPeek text={clue.answer} />}
+          {/* Sits left of ✓/✗: check the answer, then adjudicate. Doubles as the
+              reveal button — hold to peek privately, tap to show the room. */}
+          <AnswerPeek text={clue.answer} revealed={room.answer_revealed} onReveal={onReveal} />
           {room.active_is_dd ? (
             <>
               <button
@@ -231,11 +232,6 @@ export default function ClueView({
                 🔔 Open buzzers
               </button>
             )
-          )}
-          {!room.answer_revealed && (
-            <button onClick={onReveal} className="rounded-xl bg-white/15 px-5 py-3 font-semibold">
-              👁 Reveal answer
-            </button>
           )}
           <button onClick={onClose} className="rounded-xl bg-gold text-boarddark px-5 py-3 font-bold">
             ← Back to board
