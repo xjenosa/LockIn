@@ -1,6 +1,9 @@
 -- Buzzer — RPC functions. Run AFTER schema.sql.
 -- All functions are SECURITY DEFINER (they bypass RLS); host functions verify
 -- host_token against room_hosts before mutating anything.
+--
+-- IDEMPOTENT: everything here is "create or replace", so re-running this over a
+-- live database just updates the functions in place. No migrations folder.
 
 -- Postgres keys functions on argument types, so re-running this file over an
 -- older install would leave the pre-migration signatures behind and make

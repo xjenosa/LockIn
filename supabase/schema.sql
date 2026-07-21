@@ -1,4 +1,9 @@
--- Buzzer — schema. Run this FIRST in the Supabase SQL editor, then functions.sql.
+-- Buzzer — tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
+-- then functions.sql.
+--
+-- Both files are IDEMPOTENT: re-running them over a live database brings it up
+-- to date without touching existing rows. That's why there is no migrations
+-- folder — after pulling changes, just run these two again in order.
 
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
@@ -90,6 +95,17 @@ create table if not exists buzzes (
 );
 
 -- ---------------------------------------------------------------------------
+-- Upgrades for databases created before these columns existed.
+--
+-- "create table if not exists" is a no-op once the table exists, so a column
+-- added to the block above would never reach a live database without this.
+-- ANY new column must be repeated here, or existing installs silently miss it.
+-- ---------------------------------------------------------------------------
+alter table rooms add column if not exists buzzer_arms_at timestamptz;
+alter table rooms add column if not exists pick_order uuid[] not null default '{}';
+alter table rooms add column if not exists pick_index int not null default 0;
+
+-- ---------------------------------------------------------------------------
 -- Row Level Security: public (anon) may READ live game state, never write.
 -- All writes go through SECURITY DEFINER functions in functions.sql.
 -- room_hosts, final_submissions and score_events have RLS enabled with no
@@ -103,6 +119,12 @@ alter table final_submissions enable row level security;
 alter table score_events enable row level security;
 alter table buzzes enable row level security;
 
+-- Dropped first so this file can be re-run over a live database.
+drop policy if exists "public read rooms"   on rooms;
+drop policy if exists "public read teams"   on teams;
+drop policy if exists "public read players" on players;
+drop policy if exists "public read buzzes"  on buzzes;
+
 create policy "public read rooms"   on rooms   for select using (true);
 create policy "public read teams"   on teams   for select using (true);
 create policy "public read players" on players for select using (true);
@@ -111,8 +133,16 @@ create policy "public read buzzes"  on buzzes  for select using (true);
 -- ---------------------------------------------------------------------------
 -- Realtime: broadcast row changes for the tables clients watch. score_events is
 -- deliberately excluded — broadcasting it would push answer text to every phone.
--- (If this errors with "already member", that's fine — it's already enabled.)
 -- ---------------------------------------------------------------------------
-alter publication supabase_realtime add table rooms;
-alter publication supabase_realtime add table teams;
-alter publication supabase_realtime add table players;
+do $$
+declare v_t text;
+begin
+  foreach v_t in array array['rooms', 'teams', 'players'] loop
+    if not exists (
+      select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = v_t
+    ) then
+      execute format('alter publication supabase_realtime add table public.%I', v_t);
+    end if;
+  end loop;
+end $$;
