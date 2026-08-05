@@ -379,7 +379,7 @@ await suite("game", only, "full game playthrough", async () => {
   const l = await ledgerMatches(g.token, g.roomId);
   check("ledger matches after a full 30-clue game", l.ok, l.bad.join("; "));
 
-  // Final round end to end.
+  // Last Call end to end.
   await rpc("host_set_phase", { p_host_token: g.token, p_phase: "final_wager", p_timer: null });
   const teams = await teamsOf(g.roomId);
   for (const p of g.players) {

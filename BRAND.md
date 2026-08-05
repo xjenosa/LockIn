@@ -81,7 +81,7 @@ Hard rule: no animation between tap and result. The buzz verdict renders the ins
 - **Answer reveal**: the answer pops in below the clue in signal display type with a teal text glow.
 - **Wildcard splash** (the secret-wager bonus clue): stage flooded with a coral radial glow, WILDCARD! in flare display caps with a flare glow, wager form on a quiet card, lock button in flare.
 - **Phone buzzer**: one giant rounded-3xl button. Idle slate "Wait for it", white GET READY with the countdown, then full signal teal BLARE! with the teal pulse glow. Winner state flips to signal with "YOU'RE FIRST!". Locked out is dim loss red. Wildcard state is flare: "Look up!".
-- **Last Call** (was Final Round): every phase of it is flare-coded. Host and projector show a LAST CALL eyebrow in flare, wagers render in flare, the reveal runs on quiet cards with signal for the reveal action and win/loss for judgment.
+- **Last Call** (the endgame wager round): every phase of it is flare-coded. Host and projector show a LAST CALL eyebrow in flare, wagers render in flare, the reveal runs on quiet cards with signal for the reveal action and win/loss for judgment.
 - **Winner**: confetti falls, CHAMPIONS eyebrow in signal, winner name pops in their team color.
 
 ## 8. Do not
