@@ -44,17 +44,17 @@ export default function Timer({
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="h-3 w-full rounded-full bg-black/40 overflow-hidden">
+      <div className="h-3 w-full rounded-full bg-white/10 overflow-hidden">
         <div
           className={`h-full rounded-full transition-[width] duration-100 ${
-            urgent ? "bg-red-500" : "bg-gold"
+            urgent ? "bg-loss" : "bg-signal"
           }`}
           style={{ width: `${pct}%` }}
         />
       </div>
       <div
         className={`mt-1 text-center font-display text-2xl ${
-          remaining === 0 ? "text-red-400" : urgent ? "text-red-300" : "text-gold"
+          urgent ? "text-loss" : "text-signal"
         }`}
       >
         {remaining === 0 ? "TIME!" : Math.ceil(remaining)}

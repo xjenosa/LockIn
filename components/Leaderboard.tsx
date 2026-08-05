@@ -22,8 +22,8 @@ export default function Leaderboard({
           key={t.id}
           className={`flex items-center gap-3 rounded-xl px-4 ${
             big ? "py-4 text-2xl" : "py-2 text-base"
-          } bg-black/30 border ${
-            t.id === highlightTeamId ? "border-gold" : "border-white/10"
+          } bg-white/[0.06] border ${
+            t.id === highlightTeamId ? "border-signal" : "border-white/10"
           }`}
         >
           <span className={`font-display ${big ? "text-3xl w-12" : "text-xl w-8"} text-center`}>
@@ -36,7 +36,7 @@ export default function Leaderboard({
           <span className="flex-1 truncate font-semibold">{t.name}</span>
           <span
             className={`font-display ${big ? "text-3xl" : "text-xl"} ${
-              t.score < 0 ? "text-red-400" : "text-gold"
+              t.score < 0 ? "text-loss" : "text-signal"
             }`}
           >
             {fmtScore(t.score)}

@@ -27,7 +27,7 @@ export default function HostCreate() {
 
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center gap-8 p-6">
-      <h1 className="font-display text-4xl md:text-6xl text-gold text-shadow-board">HOST A GAME</h1>
+      <h1 className="font-display text-4xl md:text-6xl">HOST A GAME</h1>
 
       <div className="w-full max-w-lg space-y-3">
         <p className="text-white/70 text-sm">Pick a question pack:</p>
@@ -36,7 +36,7 @@ export default function HostCreate() {
             key={p.id}
             onClick={() => setPackId(p.id)}
             className={`w-full text-left rounded-2xl border p-4 transition ${
-              packId === p.id ? "border-gold bg-gold/10" : "border-white/15 bg-black/20 hover:border-white/40"
+              packId === p.id ? "border-signal bg-signal/10" : "border-white/15 bg-white/[0.04] hover:border-white/40"
             }`}
           >
             <span className="font-display text-xl">{p.name}</span>
@@ -45,12 +45,12 @@ export default function HostCreate() {
         ))}
       </div>
 
-      {error && <p className="text-red-300">{error}</p>}
+      {error && <p className="text-loss">{error}</p>}
 
       <button
         onClick={create}
         disabled={busy}
-        className="w-full max-w-lg rounded-2xl bg-green-500 py-4 font-display text-2xl disabled:opacity-50"
+        className="w-full max-w-lg rounded-2xl bg-signal text-ink py-4 font-display text-2xl disabled:opacity-50"
       >
         {busy ? "Creating…" : "Create room 🎬"}
       </button>

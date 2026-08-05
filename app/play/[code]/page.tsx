@@ -61,7 +61,7 @@ export default function Play() {
   if (!room || !ready) return <Center>Loading…</Center>;
 
   if (!identity || staleIdentity) {
-    // The lobby closes at the Final Round, so show that rather than a join form
+    // The lobby closes at Last Call, so show that rather than a join form
     // the server is guaranteed to reject with GAME_CLOSED.
     const closed = ["final_wager", "final_clue", "final_reveal", "results"].includes(room.phase);
     if (closed)
@@ -69,7 +69,7 @@ export default function Play() {
         <Center>
           <p className="text-3xl">🔒 This game has finished</p>
           <p className="text-white/60 mt-2">
-            Joining is closed for the Final Round. If your host starts another
+            Joining is closed during Last Call. If your host starts another
             round, this page will let you back in.
           </p>
         </Center>
@@ -78,8 +78,8 @@ export default function Play() {
     // Not joined yet (or stale identity from a previous game on this code)
     return (
       <main className="min-h-dvh p-6 flex flex-col justify-center">
-        <h1 className="font-display text-4xl text-gold text-shadow-board text-center mb-8">
-          Join room {code}
+        <h1 className="font-display text-4xl text-center mb-8">
+          Join room <span className="text-signal">{code}</span>
         </h1>
         <TeamJoin
           code={code}
@@ -105,7 +105,7 @@ export default function Play() {
     void refetch().then(() => setSavedTeamId(null));
   };
 
-  // Team membership is the only ACL on the Final Round submissions and on the
+  // Team membership is the only ACL on the Last Call submissions and on the
   // steal lockout, so update_player refuses a switch in those states. Offer
   // name-only editing there rather than a picker that can only fail.
   const teamLocked =
@@ -119,7 +119,7 @@ export default function Play() {
   // that only receive it as a prop) can reach it.
   const header = (
     <>
-      <header className="flex items-center gap-3 rounded-2xl bg-black/30 border border-white/10 p-3">
+      <header className="flex items-center gap-3 rounded-2xl bg-white/[0.06] border border-white/10 p-3">
         <button
           onClick={() => setEditing(true)}
           className="flex items-center gap-3 flex-1 min-w-0 text-left"
@@ -131,7 +131,7 @@ export default function Play() {
           </span>
         </button>
         <div className="text-right">
-          <p className={`font-display text-2xl ${myTeam.score < 0 ? "text-red-400" : "text-gold"}`}>
+          <p className={`font-display text-2xl ${myTeam.score < 0 ? "text-loss" : "text-signal"}`}>
             {fmtScore(myTeam.score)}
           </p>
           <p className="text-white/50 text-xs">#{rank} of {teams.length}</p>
@@ -152,9 +152,9 @@ export default function Play() {
         // The min-h-full wrapper does the aligning instead.
         <div className="fixed inset-0 z-50 bg-black/70 overflow-y-auto p-4">
           <div className="min-h-full flex flex-col justify-end sm:justify-center items-center">
-            <div className="w-full max-w-md rounded-3xl bg-boarddark border border-white/15 p-5 space-y-4">
+            <div className="w-full max-w-md rounded-3xl bg-stage border border-white/15 p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-2xl text-gold">
+                <h2 className="font-display text-2xl">
                   {teamLocked ? "Your name" : "Name & team"}
                 </h2>
                 <button
@@ -263,7 +263,7 @@ export default function Play() {
   );
 }
 
-// Final Round on the phone: secret wager, then secret typed answer.
+// Last Call on the phone: secret wager, then secret typed answer.
 function FinalPhone({
   phase,
   playerId,
@@ -318,12 +318,12 @@ function FinalPhone({
     <main className="min-h-dvh p-4 flex flex-col gap-4">
       {header}
       <div className="flex-1 flex flex-col justify-center gap-4 max-w-md w-full mx-auto">
-        <h1 className="font-display text-3xl text-gold text-center">FINAL ROUND</h1>
+        <h1 className="font-display text-3xl text-flare glow-flare text-center">LAST CALL</h1>
         {phase === "final_wager" ? (
           <>
             <p className="text-center text-white/70">
-              Team wager: anything from $0 to {fmtScore(maxWager)}. One wager per team
-              (last save wins).
+              Team wager: anything from 0 to {fmtScore(maxWager)} points. One wager per
+              team (last save wins).
             </p>
             <input
               type="number"
@@ -331,7 +331,7 @@ function FinalPhone({
               value={wager}
               onChange={(e) => setWager(e.target.value)}
               className="w-full rounded-2xl bg-white/10 border border-white/20 p-5 text-center font-display text-4xl"
-              placeholder="$0"
+              placeholder="0"
               disabled={locked}
             />
           </>
@@ -346,7 +346,7 @@ function FinalPhone({
               onChange={(e) => setAnswer(e.target.value)}
               rows={3}
               className="w-full rounded-2xl bg-white/10 border border-white/20 p-4 text-xl"
-              placeholder="What is…?"
+              placeholder="Your team's answer…"
               disabled={locked}
             />
           </>
@@ -354,12 +354,12 @@ function FinalPhone({
         <button
           onClick={save}
           disabled={locked}
-          className="w-full rounded-2xl bg-green-500 py-4 font-display text-2xl disabled:opacity-40"
+          className="w-full rounded-2xl bg-signal text-ink py-4 font-display text-2xl disabled:opacity-40"
         >
           {phase === "final_wager" ? "Lock wager 🔒" : "Submit answer 📝"}
         </button>
-        {saved && !error && <p className="text-center text-green-300">{saved}</p>}
-        {error && <p className="text-center text-red-300">{error}</p>}
+        {saved && !error && <p className="text-center text-signal">{saved}</p>}
+        {error && <p className="text-center text-loss">{error}</p>}
       </div>
     </main>
   );

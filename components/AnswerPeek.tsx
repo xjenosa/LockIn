@@ -78,7 +78,7 @@ export default function AnswerPeek({
       <span className="text-white/60 text-sm whitespace-nowrap leading-tight">
         {revealed ? "👁 Revealed" : canReveal ? "👁 Hold to peek · tap to reveal" : "👁 Hold to peek"}
       </span>
-      <span className={`font-bold max-w-[36ch] transition ${shown ? "text-gold" : "blur-sm opacity-40"}`}>
+      <span className={`font-bold max-w-[36ch] transition ${shown ? "text-signal" : "blur-sm opacity-40"}`}>
         {text}
       </span>
     </div>

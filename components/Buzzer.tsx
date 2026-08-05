@@ -82,30 +82,30 @@ export default function Buzzer({
   let label: string;
   let cls: string;
   if (room.active_is_dd) {
-    label = "🎯 DAILY DOUBLE\nLook up!";
-    cls = "bg-purple-700";
+    label = "🃏 WILDCARD\nLook up!";
+    cls = "bg-flare text-ink";
   } else if (weWon) {
-    label = "🚀 YOU'RE FIRST!\nAnswer out loud!";
-    cls = "bg-gold text-boarddark";
+    label = "🚨 YOU'RE FIRST!\nAnswer out loud!";
+    cls = "bg-signal text-ink";
   } else if (buzzedTeam) {
     label = `🔒 ${buzzedTeam.name} buzzed`;
-    cls = "bg-boarddark";
+    cls = "bg-tile text-white/80";
   } else if (lockedOut) {
     label = "😬 Locked out\n(wrong answer)";
-    cls = "bg-red-900";
+    cls = "bg-loss/20 text-white/80";
   } else if (arming) {
     // Disabled, so early taps are dropped before they ever reach claim_buzz.
     label = `⏳ GET READY\n${Math.ceil(armsIn / 1000)}`;
-    cls = "bg-amber-500 text-boarddark";
+    cls = "bg-white text-ink";
   } else if (canBuzz) {
-    label = "BUZZ!";
-    cls = "bg-green-500 animate-pulseglow active:scale-95";
+    label = "BLARE!";
+    cls = "bg-signal text-ink animate-pulseglow active:scale-95";
   } else if (localBuzzed && room.buzzer_open) {
     label = "…";
-    cls = "bg-green-800";
+    cls = "bg-signal/30";
   } else {
     label = room.active_clue_id ? "🔒 Wait for it…" : "👀 Look at the board";
-    cls = "bg-red-800/80";
+    cls = "bg-tile text-white/60";
   }
 
   return (

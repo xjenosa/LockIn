@@ -44,9 +44,9 @@ import type { FinalEntry, Player, ScoreEvent, ScoreReason, Team } from "@/lib/ty
 import { useRoom } from "@/lib/useRoom";
 
 // Undo rows are unreadable as bare numbers, so every award carries a label like
-// "Correct: Ancient Rome $600".
+// "Correct: Ancient Rome 600".
 const clueTitle = (pack: Pack, id: string | null) =>
-  id ? `${getCategoryName(pack, id)} $${parseClueId(id)?.value ?? "?"}` : "";
+  id ? `${getCategoryName(pack, id)} ${parseClueId(id)?.value ?? "?"}` : "";
 
 export default function HostGame() {
   const params = useParams<{ code: string }>();
@@ -108,7 +108,7 @@ export default function HostGame() {
           This browser doesn&apos;t have the host key for room {code}.<br />
           Open the game on the device that created it, or create a new game.
         </p>
-        <Link href="/host" className="underline text-gold mt-4 inline-block">
+        <Link href="/host" className="underline text-signal mt-4 inline-block">
           Create a game
         </Link>
       </Center>
@@ -121,13 +121,13 @@ export default function HostGame() {
     return (
       <main className="min-h-dvh p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center justify-center">
         <div className="text-center">
-          <h1 className="font-display text-4xl md:text-6xl text-gold text-shadow-board mb-6">
+          <h1 className="font-display text-4xl md:text-6xl mb-6">
             {pack.name}
           </h1>
           <QRJoin code={code} big />
           <p className="mt-4 text-white/60 text-sm">
             Projector view:{" "}
-            <Link href={`/board/${code}`} target="_blank" className="underline text-gold">
+            <Link href={`/board/${code}`} target="_blank" className="underline text-signal">
               /board/{code}
             </Link>
           </p>
@@ -162,7 +162,7 @@ export default function HostGame() {
           <button
             onClick={() => void hostStartGame(t)}
             disabled={teams.length === 0}
-            className="mt-6 w-full rounded-2xl bg-green-500 py-4 font-display text-2xl disabled:opacity-40"
+            className="mt-6 w-full rounded-2xl bg-signal text-ink py-4 font-display text-2xl disabled:opacity-40"
           >
             Start game ▶
           </button>
@@ -193,7 +193,7 @@ export default function HostGame() {
       <main className="min-h-dvh p-3 md:p-6 flex flex-col lg:flex-row gap-4">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-3">
-            <h1 className="font-display text-xl md:text-2xl text-gold">{pack.name}</h1>
+            <h1 className="font-display text-xl md:text-2xl text-white/90">{pack.name}</h1>
             <div className="flex items-center gap-3 text-sm">
               <Link href={`/board/${code}`} target="_blank" className="underline text-white/60">
                 Projector
@@ -201,10 +201,10 @@ export default function HostGame() {
               <button
                 onClick={() => void hostSetPhase(t, "final_wager")}
                 className={`rounded-lg px-3 py-1.5 font-semibold ${
-                  boardDone(room, pack) ? "bg-gold text-boarddark animate-pulse" : "bg-white/10"
+                  boardDone(room, pack) ? "bg-flare text-ink animate-pulse" : "bg-white/10"
                 }`}
               >
-                Final Round →
+                Last Call →
               </button>
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function HostGame() {
               }
             >
               <span
-                className="font-display text-xl md:text-2xl text-shadow-board"
+                className="font-display text-xl md:text-2xl"
                 style={controlTeam ? { color: controlTeam.color } : undefined}
               >
                 {controlTeam
@@ -281,7 +281,7 @@ export default function HostGame() {
             onOpenBuzzer={() => void hostOpenBuzzer(t)}
             // Every adjudication refreshes the log itself: waiting on the realtime
             // round trip leaves a stale top row under the host's ✕ for up to 5s,
-            // and a $0 Daily Double moves no score, so nothing would fire at all.
+            // and a 0-point Wildcard moves no score, so nothing would fire at all.
             onCorrect={(teamId, delta) => {
               const dd = room.active_is_dd;
               void hostAward(
@@ -290,7 +290,7 @@ export default function HostGame() {
                 delta,
                 dd ? "dd_correct" : "correct",
                 room.active_clue_id ?? undefined,
-                `${dd ? "Daily Double ✓" : "Correct"}: ${clueTitle(pack, room.active_clue_id)}`
+                `${dd ? "Wildcard ✓" : "Correct"}: ${clueTitle(pack, room.active_clue_id)}`
               )
                 .then(() => hostCloseClue(t))
                 .then(refreshLog);
@@ -303,7 +303,7 @@ export default function HostGame() {
                   -penalty,
                   "dd_wrong",
                   room.active_clue_id ?? undefined,
-                  `Daily Double ✗: ${clueTitle(pack, room.active_clue_id)}`
+                  `Wildcard ✗: ${clueTitle(pack, room.active_clue_id)}`
                 )
                   .then(() => hostRevealAnswer(t))
                   .then(refreshLog);
@@ -324,7 +324,7 @@ export default function HostGame() {
   if (room.phase === "final_wager") {
     return (
       <Center>
-        <p className="font-display text-gold text-2xl tracking-widest uppercase">Final Round</p>
+        <p className="font-display text-flare glow-flare text-2xl tracking-widest uppercase">Last Call</p>
         <h1 className="font-display text-4xl md:text-6xl my-6">{pack.final.category}</h1>
         <p className="text-white/70 max-w-lg">
           Teams are entering secret wagers on their phones (0 up to their score).
@@ -332,7 +332,7 @@ export default function HostGame() {
         </p>
         <button
           onClick={() => void hostSetPhase(t, "final_clue", 60)}
-          className="mt-8 rounded-2xl bg-green-500 px-8 py-4 font-display text-2xl"
+          className="mt-8 rounded-2xl bg-signal text-ink px-8 py-4 font-display text-2xl"
         >
           Reveal final clue (60s) →
         </button>
@@ -345,7 +345,7 @@ export default function HostGame() {
   if (room.phase === "final_clue") {
     return (
       <Center>
-        <p className="font-display text-gold text-xl tracking-widest uppercase">
+        <p className="font-display text-flare text-xl tracking-widest uppercase">
           {pack.final.category}
         </p>
         <h1 className="font-display text-3xl md:text-5xl my-6 max-w-4xl">{pack.final.clue}</h1>
@@ -356,7 +356,7 @@ export default function HostGame() {
         <AnswerPeek text={pack.final.answer} className="mt-4" />
         <button
           onClick={() => void hostSetPhase(t, "final_reveal")}
-          className="mt-6 rounded-2xl bg-gold text-boarddark px-8 py-4 font-display text-2xl"
+          className="mt-6 rounded-2xl bg-flare text-ink px-8 py-4 font-display text-2xl"
         >
           Lock answers & start reveal →
         </button>
@@ -372,17 +372,17 @@ export default function HostGame() {
 
     return (
       <Center>
-        <p className="font-display text-gold text-xl tracking-widest uppercase">The moment of truth</p>
+        <p className="font-display text-flare text-xl tracking-widest uppercase">The moment of truth</p>
         <AnswerPeek text={pack.final.answer} className="mt-3" />
         {!done && entry ? (
-          <div className="mt-8 w-full max-w-xl rounded-3xl bg-black/40 border border-white/15 p-8 space-y-4 animate-pop" key={entry.team_id}>
+          <div className="mt-8 w-full max-w-xl rounded-3xl bg-white/5 border border-white/15 p-8 space-y-4 animate-pop" key={entry.team_id}>
             <div className="flex items-center gap-3 justify-center text-3xl font-bold">
               <span className="h-5 w-5 rounded-full" style={{ backgroundColor: entry.color }} />
               {entry.team_name}
             </div>
             <p className="text-center text-white/60">
-              Score before final: {fmtScore(entry.score)} · Wager:{" "}
-              <span className="text-gold font-bold">{fmtScore(entry.wager)}</span>
+              Before Last Call: {fmtScore(entry.score)} · Wager:{" "}
+              <span className="text-flare font-bold">{fmtScore(entry.wager)}</span>
             </p>
             {answerShown ? (
               <>
@@ -392,23 +392,23 @@ export default function HostGame() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => {
-                      void hostAward(t, entry.team_id, entry.wager, "final", undefined, "Final Round ✓")
+                      void hostAward(t, entry.team_id, entry.wager, "final", undefined, "Last Call ✓")
                         .then(refreshLog);
                       setAnswerShown(false);
                       setRevealIdx((i) => i + 1);
                     }}
-                    className="rounded-xl bg-green-500 py-3 font-bold text-lg"
+                    className="rounded-xl bg-win text-ink py-3 font-bold text-lg"
                   >
                     ✓ (+{fmtScore(entry.wager)})
                   </button>
                   <button
                     onClick={() => {
-                      void hostAward(t, entry.team_id, -entry.wager, "final", undefined, "Final Round ✗")
+                      void hostAward(t, entry.team_id, -entry.wager, "final", undefined, "Last Call ✗")
                         .then(refreshLog);
                       setAnswerShown(false);
                       setRevealIdx((i) => i + 1);
                     }}
-                    className="rounded-xl bg-red-500 py-3 font-bold text-lg"
+                    className="rounded-xl bg-loss py-3 font-bold text-lg"
                   >
                     ✗ (−{fmtScore(entry.wager)})
                   </button>
@@ -417,7 +417,7 @@ export default function HostGame() {
             ) : (
               <button
                 onClick={() => setAnswerShown(true)}
-                className="w-full rounded-xl bg-gold text-boarddark py-3 font-display text-xl"
+                className="w-full rounded-xl bg-signal text-ink py-3 font-display text-xl"
               >
                 Reveal their answer 👀
               </button>
@@ -429,7 +429,7 @@ export default function HostGame() {
         ) : (
           <button
             onClick={() => void hostSetPhase(t, "results")}
-            className="mt-8 rounded-2xl bg-green-500 px-8 py-4 font-display text-2xl animate-pulseglow"
+            className="mt-8 rounded-2xl bg-signal text-ink px-8 py-4 font-display text-2xl animate-pulseglow"
           >
             🏆 Show final results!
           </button>
@@ -468,7 +468,7 @@ export default function HostGame() {
   return (
     <Center>
       <Confetti />
-      <p className="font-display text-2xl text-gold tracking-widest uppercase">Champions</p>
+      <p className="font-display text-2xl text-signal tracking-widest uppercase">Champions</p>
       {winner && (
         <h1 className="font-display text-5xl md:text-7xl my-4 animate-pop" style={{ color: winner.color }}>
           {winner.name} 🏆
@@ -500,7 +500,7 @@ export default function HostGame() {
             .catch(() => {})
             .then(() => router.push("/"));
         }}
-        className="mt-10 rounded-2xl bg-gold text-boarddark px-8 py-4 font-display text-2xl"
+        className="mt-10 rounded-2xl bg-white/10 border border-white/20 px-8 py-4 font-display text-2xl"
       >
         🏠 Finish & back to home
       </button>
@@ -532,9 +532,9 @@ function BackToBoardButton({ onClick }: { onClick: () => void }) {
 const REASON_TEXT: Record<ScoreReason, string> = {
   correct: "Correct",
   miss: "Wrong answer",
-  dd_correct: "Daily Double ✓",
-  dd_wrong: "Daily Double ✗",
-  final: "Final Round",
+  dd_correct: "Wildcard ✓",
+  dd_wrong: "Wildcard ✗",
+  final: "Last Call",
   manual: "Manual adjustment",
 };
 
@@ -552,12 +552,12 @@ function ScoreHistory({
   return (
     <div>
       <h2 className="font-display text-xl mb-2">Score history</h2>
-      <div className="max-h-72 overflow-y-auto rounded-xl bg-black/20 border border-white/10 p-2 space-y-1">
+      <div className="max-h-72 overflow-y-auto rounded-xl bg-white/[0.04] border border-white/10 p-2 space-y-1">
         {log.map((ev) => (
           <div
             key={ev.id}
             className={`rounded-lg px-2 py-1.5 ${
-              ev.reversed ? "opacity-40 line-through" : "bg-black/30"
+              ev.reversed ? "opacity-40 line-through" : "bg-white/[0.06]"
             }`}
           >
             <div className="flex items-center gap-2">
@@ -567,7 +567,7 @@ function ScoreHistory({
               />
               <span className="flex-1 truncate text-sm font-semibold">{ev.team_name}</span>
               <span
-                className={`font-display shrink-0 ${ev.delta < 0 ? "text-red-400" : "text-gold"}`}
+                className={`font-display shrink-0 ${ev.delta < 0 ? "text-loss" : "text-signal"}`}
               >
                 {ev.delta > 0 ? "+" : ""}
                 {fmtScore(ev.delta)}
@@ -576,7 +576,7 @@ function ScoreHistory({
                 <button
                   onClick={() => onUndo(ev.id)}
                   title="Undo this"
-                  className="shrink-0 px-1 text-white/40 hover:text-red-400"
+                  className="shrink-0 px-1 text-white/40 hover:text-loss"
                 >
                   ✕
                 </button>
@@ -628,7 +628,7 @@ function LobbyTeamCard({
 
   if (!editing) {
     return (
-      <div className="rounded-xl bg-black/30 border border-white/10 p-3">
+      <div className="rounded-xl bg-white/[0.06] border border-white/10 p-3">
         <div className="flex items-center gap-2 font-semibold">
           <span className="h-3.5 w-3.5 rounded-full" style={{ backgroundColor: team.color }} />
           {team.name}
@@ -641,7 +641,7 @@ function LobbyTeamCard({
   }
 
   return (
-    <div className="rounded-xl bg-black/30 border border-white/10 p-3 space-y-2">
+    <div className="rounded-xl bg-white/[0.06] border border-white/10 p-3 space-y-2">
       <div className="flex items-center gap-2">
         <span className="h-3.5 w-3.5 rounded-full shrink-0" style={{ backgroundColor: team.color }} />
         <input
@@ -668,7 +668,7 @@ function LobbyTeamCard({
           />
         ))}
       </div>
-      {err && <p className="text-red-300 text-xs">{err}</p>}
+      {err && <p className="text-loss text-xs">{err}</p>}
       {members.map((p) => (
         <div key={p.id} className="flex items-center gap-2 text-sm">
           <span className="flex-1 truncate text-white/80">{p.name}</span>
@@ -685,7 +685,7 @@ function LobbyTeamCard({
           </select>
           <button
             onClick={() => void hostRemovePlayer(token, p.id)}
-            className="px-1 text-white/40 hover:text-red-400"
+            className="px-1 text-white/40 hover:text-loss"
             aria-label={`remove ${p.name}`}
           >
             ✕

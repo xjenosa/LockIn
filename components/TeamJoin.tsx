@@ -13,7 +13,7 @@ export const FRIENDLY: Record<string, string> = {
   TEAM_NAME_REQUIRED: "Give your team a name!",
   TEAM_NOT_FOUND: "That team is gone. Pick another one.",
   PLAYER_NOT_FOUND: "We lost your player. Rejoin the room.",
-  TEAM_LOCKED_IN_FINAL: "Teams are locked for the Final Round. Ask your host.",
+  TEAM_LOCKED_IN_FINAL: "Teams are locked for Last Call. Ask your host.",
   TEAM_LOCKED_MID_CLUE: "Can't switch teams mid-clue. Try between clues.",
   GAME_CLOSED: "This game has already finished. Ask your host to start a new round.",
 };
@@ -119,7 +119,7 @@ export default function TeamJoin({
 
       {nameOnly ? (
         <p className="text-white/50 text-sm">
-          Teams are locked while a clue is live and through the Final Round, but you
+          Teams are locked while a clue is live and through Last Call, but you
           can still fix your name.
         </p>
       ) : (
@@ -130,7 +130,7 @@ export default function TeamJoin({
               disabled={!teams.length}
               className={`rounded-xl py-3 font-semibold border ${
                 mode === "join"
-                  ? "bg-gold text-boarddark border-gold"
+                  ? "bg-signal text-ink border-signal"
                   : "border-white/20 disabled:opacity-40"
               }`}
             >
@@ -139,7 +139,7 @@ export default function TeamJoin({
             <button
               onClick={() => pickMode("create")}
               className={`rounded-xl py-3 font-semibold border ${
-                mode === "create" ? "bg-gold text-boarddark border-gold" : "border-white/20"
+                mode === "create" ? "bg-signal text-ink border-signal" : "border-white/20"
               }`}
             >
               Create a team
@@ -153,7 +153,7 @@ export default function TeamJoin({
                   key={t.id}
                   onClick={() => setSelectedTeam(t.id)}
                   className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border text-left ${
-                    selectedTeam === t.id ? "border-gold bg-gold/10" : "border-white/15 bg-black/20"
+                    selectedTeam === t.id ? "border-signal bg-signal/10" : "border-white/15 bg-white/[0.04]"
                   }`}
                 >
                   <span className="h-4 w-4 rounded-full shrink-0" style={{ backgroundColor: t.color }} />
@@ -194,12 +194,12 @@ export default function TeamJoin({
         </>
       )}
 
-      {error && <p className="text-red-300 text-center">{error}</p>}
+      {error && <p className="text-loss text-center">{error}</p>}
 
       <button
         onClick={submit}
         disabled={busy}
-        className="w-full rounded-2xl bg-green-500 py-4 font-display text-2xl disabled:opacity-50"
+        className="w-full rounded-2xl bg-signal text-ink py-4 font-display text-2xl disabled:opacity-50"
       >
         {busy ? (onSubmit ? "Saving…" : "Joining…") : submitLabel ?? "Let's go! 🚀"}
       </button>

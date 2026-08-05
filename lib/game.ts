@@ -42,11 +42,15 @@ export function boardDone(room: Room, pack: Pack): boolean {
   return room.revealed_clue_ids.length >= total;
 }
 
+// Scores are bare points, formatted with thousands separators. Prose copy says
+// "points" where a unit helps; the number itself never carries one.
 export function fmtScore(n: number): string {
-  return n < 0 ? `-$${Math.abs(n).toLocaleString()}` : `$${n.toLocaleString()}`;
+  return n.toLocaleString();
 }
 
+// Team identity hues, tuned to read on ink without colliding with the signal
+// and flare UI roles (see BRAND.md).
 export const TEAM_COLORS = [
-  "#f43f5e", "#f97316", "#facc15", "#22c55e",
-  "#06b6d4", "#3b82f6", "#a855f7", "#ec4899",
+  "#FF5C5C", "#FF9E4D", "#FFD166", "#9BE857",
+  "#57E0FF", "#5CB2FF", "#B48CFF", "#FF7AC1",
 ];
