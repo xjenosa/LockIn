@@ -1,16 +1,17 @@
--- Buzzer maintenance. Optional: not needed to set the app up, and safe to run
--- at any time, including during a party. Run it whenever you want to tidy up.
+-- Blare maintenance. Optional: not part of setup. The statements above the
+-- opt-in divider are live and safe to run at ANY time, including during a
+-- party (the stale purge cannot touch a game younger than the cutoff).
 --
--- Games normally clean themselves up: "Finish & back to home" on the results
--- screen calls host_delete_room, which deletes the room and cascades to its
--- teams, players, buzzes and score_events. This file catches what that misses:
--- games abandoned mid-round when a laptop was shut or a tab was lost.
+-- Games normally clean themselves up: leaving the results screen calls
+-- host_delete_room, which cascades the whole room away. This file catches
+-- what that misses: games abandoned mid-round when a laptop was shut or a
+-- tab was lost.
 
 -- Finished games where the host closed the tab instead of using the button.
 delete from rooms where phase = 'results';
 
--- Games nobody has touched in a day. A session lasts about two hours, so this
--- can never catch a live game. Returns how many it removed.
+-- Games older than 24h (cutoff is created_at, not last activity; a session
+-- lasts about two hours, so this cannot catch a live game).
 select delete_stale_rooms(24) as abandoned_rooms_deleted;
 
 -- What's left.
@@ -27,7 +28,7 @@ select count(*) as rooms_remaining,
 -- delete from rooms;
 
 -- Run the stale purge automatically at 4am daily. Needs the pg_cron extension
--- from Database -> Extensions. The results-screen button already covers games
--- that end normally, so this is belt-and-braces.
+-- from Database -> Extensions. Redundant with normal endings; only worthwhile
+-- if abandoned games actually accumulate.
 -- create extension if not exists pg_cron;
--- select cron.schedule('buzzer-purge-stale', '0 4 * * *', $cron$ select delete_stale_rooms(24); $cron$);
+-- select cron.schedule('blare-purge-stale', '0 4 * * *', $cron$ select delete_stale_rooms(24); $cron$);

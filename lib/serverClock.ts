@@ -2,12 +2,13 @@
 
 import { supabase } from "./supabaseClient";
 
-// buzzer_arms_at and clue_opened_at are Postgres timestamps, so every countdown
-// has to be measured against the DB clock. A phone a few seconds slow would
-// otherwise hold its buzzer disabled after the race has started; a fast one
-// would enable it before claim_buzz will accept the tap. One round trip on
-// mount is enough for a 3-second arming window.
-let skew = 0; // serverNow - Date.now()
+// Timebase contract: buzzer_arms_at and clue_opened_at are DB timestamps, so
+// EVERY countdown must compare against serverNow(), never Date.now(). A device
+// a few seconds slow holds its buzzer disabled after the race starts; a fast
+// one enables it early and claim_buzz eats the tap. Consumers: Buzzer,
+// ClueView, Timer. One sync round trip (from useRoom mount) is accurate enough
+// for the 3-second arming window.
+let skew = 0; // serverNow - Date.now(), ms
 let synced = false;
 let syncing = false;
 
@@ -18,8 +19,8 @@ export async function syncServerClock() {
   syncing = true;
   try {
     const t0 = Date.now();
-    // Pre-migration databases have no server_now(); skew stays 0 and every
-    // countdown behaves exactly as it did before.
+    // A database missing server_now() (never migrated) leaves skew at 0, which
+    // degrades to raw device time rather than failing.
     const { data, error } = await supabase.rpc("server_now");
     if (error || typeof data !== "string") return;
     // Assume a symmetric round trip: the server read its clock ~rtt/2 ago.

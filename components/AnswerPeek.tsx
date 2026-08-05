@@ -2,20 +2,20 @@
 
 import { useRef, useState } from "react";
 
-// The host's laptop IS the projected screen, so any answer printed on it is an
-// answer on the wall. This keeps one blurred until the host asks for it: hover
-// with a mouse, press and hold on a touchscreen. Its box never changes size,
-// because a control bar that reflows on hover is its own bug.
+// Privacy control. The host's laptop is often mirrored to the projector, so a
+// plainly-printed answer is an answer on the wall. The text stays blurred until
+// deliberately peeked: mouse hover, or press-and-hold on touch. The box never
+// changes size on peek; a control bar that reflows on hover misplaces the ✓/✗
+// buttons under the host's cursor.
 //
-// Pointer events with a pointerType guard, NOT onMouseEnter/onTouchStart: after
-// a tap every touch browser dispatches a compatibility mouseenter, which would
-// re-open the peek and leave the answer on the projector until the host happens
-// to tap elsewhere. (e.preventDefault() can't suppress it either, because React
-// registers touchstart passively.)
-//
-// With onReveal this is also the reveal button: hold = private peek, quick tap =
-// show the room. A hold is NEVER treated as a tap, so lingering on the control
-// can't put the answer on the projector; only a deliberate short press does.
+// Implementation constraints, do not "simplify":
+// - Pointer events with a pointerType guard, NOT onMouseEnter/onTouchStart.
+//   After a tap, touch browsers dispatch a compatibility mouseenter that would
+//   silently re-open the peek and leave the answer on the projector.
+//   preventDefault cannot suppress it: React registers touchstart passively.
+// - When onReveal is set this doubles as the reveal button: hold = private
+//   peek, short press (< TAP_MS) = reveal to the room. A hold must NEVER count
+//   as a tap, or lingering on the control publishes the answer.
 const TAP_MS = 250;
 
 export default function AnswerPeek({
@@ -35,7 +35,7 @@ export default function AnswerPeek({
   const shown = revealed || peek;
   const canReveal = Boolean(onReveal) && !revealed;
 
-  // A click only counts if the press was short. Anything longer was a peek.
+  // Short press = reveal; anything longer was a peek and must not reveal.
   const endPress = () => {
     const held = downAt.current === null ? Infinity : Date.now() - downAt.current;
     downAt.current = null;

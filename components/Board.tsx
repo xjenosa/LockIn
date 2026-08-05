@@ -4,8 +4,11 @@ import type { Pack } from "@/content/types";
 import { clueId } from "@/lib/game";
 import type { Room } from "@/lib/types";
 
-// The 6x5 grid. Pass onPick to make cells clickable (host); omit for the
-// read-only projector view. Slate tiles on ink, values in signal: see BRAND.md.
+// The 6x5 board grid. Pass onPick to make cells clickable (host page); omit
+// for the read-only projector. Layout assumes the pack invariants in
+// content/types.ts (6 categories x 5 clues, VALUES rows). Revealed cells stay
+// mounted with transparent text so the grid never reflows mid-game. Visual
+// language per BRAND.md: slate tiles on ink, values in signal.
 export default function Board({
   pack,
   room,

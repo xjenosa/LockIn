@@ -1,7 +1,12 @@
-// localStorage persistence so a reload never kicks anyone out of the game.
+// localStorage persistence so a reload never kicks anyone out of a live game.
+//
+// Key stability contract: the "buzzer:" prefix predates the Blare rebrand and
+// is kept on purpose. Changing these key formats invalidates every stored host
+// token and player identity, which ends all in-progress games. Do not rename.
 
 export type PlayerIdentity = { playerId: string; teamId: string; name: string };
 
+// localStorage throws in some private-browsing modes; degrade to "not stored".
 const safe = {
   get(key: string): string | null {
     try {

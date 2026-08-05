@@ -6,9 +6,11 @@ import { QRCodeSVG } from "qrcode.react";
 export default function QRJoin({ code, big = false }: { code: string; big?: boolean }) {
   const [url, setUrl] = useState("");
 
-  // Prefer the canonical public origin. Without it the QR inherits whatever the
-  // host is browsing, and a Vercel preview URL is login-protected, so every
-  // player gets an account prompt instead of the game.
+  // QR target prefers NEXT_PUBLIC_SITE_URL over window.location.origin.
+  // Without it the QR inherits whatever URL the host happens to be browsing;
+  // a Vercel preview URL is login-protected, so every scanning player would
+  // hit an account prompt instead of the game. Effect, not render: the origin
+  // read must not run during SSR.
   useEffect(() => {
     const origin = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || window.location.origin;
     setUrl(`${origin}/play/${code}`);

@@ -5,8 +5,10 @@ import { joinRoom } from "@/lib/api";
 import { TEAM_COLORS } from "@/lib/game";
 import type { Team } from "@/lib/types";
 
-// Shared so callers that run their own RPC (the play page's edit sheet calls
-// update_player) surface the exact same wording.
+// Error-code copy map. Keys are the SCREAMING_SNAKE codes raised by
+// supabase/functions.sql (join_room / update_player); keep in sync with the
+// SQL. Exported because the play page's edit sheet calls update_player itself
+// and must surface identical wording.
 export const FRIENDLY: Record<string, string> = {
   ROOM_NOT_FOUND: "Room not found. Check the code!",
   TEAM_NAME_TAKEN: "That team name is taken. Pick another.",
@@ -18,10 +20,10 @@ export const FRIENDLY: Record<string, string> = {
   GAME_CLOSED: "This game has already finished. Ask your host to start a new round.",
 };
 
-// Two modes: a fresh join (default) and editing an existing player, where the
-// caller supplies onSubmit so the same UI drives update_player instead.
-// nameOnly drops the team half of the form for the phases where the server
-// refuses a team change anyway.
+// One form, two modes: fresh join (default, calls joinRoom) and editing an
+// existing player (caller supplies onSubmit wired to update_player). nameOnly
+// drops the team half of the form in the phases where the server would refuse
+// a team change anyway (mid-clue, Last Call onward); the caller decides when.
 export default function TeamJoin({
   code,
   teams,
@@ -58,11 +60,13 @@ export default function TeamJoin({
   const modeTouched = useRef(false);
   const autoJoined = useRef(false);
 
-  // teams is [] on first render (useRoom hasn't fetched yet) and a useState
-  // initializer never re-runs, so without this everyone lands on "Create a team".
-  // Only the first arrival counts, and never once they've started naming a team:
-  // the very first player is mid-type in the Create form when everyone else's
-  // teams land, and switching them to the list throws that away.
+  // Mode auto-correction. teams is [] on first render (useRoom hasn't fetched)
+  // and a useState initializer never re-runs, so without this effect everyone
+  // would land on "Create a team". Flip to "join" only on the FIRST arrival of
+  // teams, never after the user touched the toggle, and never once they have
+  // started typing a team name: the first player in the room is usually
+  // mid-type in Create when everyone else's teams land, and yanking them to
+  // the join list would discard their input.
   useEffect(() => {
     if (modeTouched.current || autoJoined.current || !teams.length || teamName.trim()) return;
     autoJoined.current = true;
@@ -83,7 +87,8 @@ export default function TeamJoin({
     try {
       const res = onSubmit
         ? await onSubmit({
-            // No team fields at all -> update_player takes its name-only branch.
+            // nameOnly sends no team fields at all, which routes update_player
+            // into its keep-current-team branch.
             name: name.trim(),
             teamId: !nameOnly && mode === "join" ? selectedTeam : undefined,
             newTeamName: !nameOnly && mode === "create" ? teamName.trim() : undefined,

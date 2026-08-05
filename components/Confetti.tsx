@@ -1,6 +1,8 @@
 "use client";
 
-// Lightweight CSS confetti: no dependency, no network.
+// CSS-only confetti (animate-fall keyframe): no dependency, no network.
+// Deterministic positions/delays derived from the index, on purpose: random
+// values would reshuffle every React re-render.
 const PIECES = ["🎉", "🎊", "⭐", "🏆", "✨"];
 
 export default function Confetti() {

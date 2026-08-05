@@ -43,8 +43,9 @@ import { getHostToken } from "@/lib/identity";
 import type { FinalEntry, Player, ScoreEvent, ScoreReason, Team } from "@/lib/types";
 import { useRoom } from "@/lib/useRoom";
 
-// Undo rows are unreadable as bare numbers, so every award carries a label like
-// "Correct: Ancient Rome 600".
+// Human-readable clue tag ("Ancient Rome 600") stamped into score_events
+// labels at award time, because undo rows rendered later from bare ids and
+// deltas are unreadable. Labels can also hold the answer: host-eyes only.
 const clueTitle = (pack: Pack, id: string | null) =>
   id ? `${getCategoryName(pack, id)} ${parseClueId(id)?.value ?? "?"}` : "";
 
@@ -73,8 +74,10 @@ export default function HostGame() {
     if (token) void hostGetScoreLog(token).then(setLog);
   }, [token]);
 
-  // score_events is host-only and not in the realtime publication, so re-pull it
-  // whenever an adjudication moves a score or closes a clue.
+  // score_events is host-token-gated AND deliberately excluded from the
+  // realtime publication (rows can carry answers), so no push ever arrives.
+  // Re-pull the log whenever anything it reflects changes: any team's score,
+  // the phase, or the revealed count.
   const scoreKey = teams.map((x) => `${x.id}:${x.score}`).join("|");
   const phase = room?.phase;
   const revealedCount = room?.revealed_clue_ids.length ?? 0;
@@ -86,7 +89,8 @@ export default function HostGame() {
   useEffect(() => {
     if (room?.phase === "final_reveal" && token && finals === null) {
       void hostGetFinals(token).then((rows) => {
-        // Traditional reveal: lowest pre-wager score first.
+        // Reveal order: lowest pre-wager score first, so the leader's fate
+        // resolves last. Fetched once per entry into final_reveal.
         setFinals([...rows].sort((a, b) => a.score - b.score));
       });
     }
@@ -173,11 +177,12 @@ export default function HostGame() {
 
   // ---------------- playing ----------------
   if (room.phase === "playing") {
-    // Rotation ring. Derive "next" from control_team_id rather than pick_index:
-    // a room that started before the migration has an empty ring until the first
-    // close_clue back-fills it, and control is what everything else reads.
-    // Mirror _advance_control's prune+append (teams arrive ordered by created_at)
-    // or the label names the wrong team the moment someone joins mid-game.
+    // "Next up" preview of the rotation ring. Derive it from control_team_id
+    // rather than pick_index: a pre-migration room has an empty ring until the
+    // first close_clue back-fills it, and control_team_id is what everything
+    // else reads. The prune+append below MUST mirror _advance_control in
+    // supabase/functions.sql (teams ordered by created_at) or this label names
+    // the wrong team the moment someone joins mid-game.
     const stored = room.pick_order ?? [];
     const ring = [
       ...stored.filter((id) => teams.some((x) => x.id === id)),
@@ -208,9 +213,9 @@ export default function HostGame() {
               </button>
             </div>
           </div>
-          {/* Renders without a control team too: those chips are the only
-              hostSetControl UI, and a room that started before the migration has
-              nobody holding the pick until the host seeds the ring here. */}
+          {/* Must render even with no control team: these chips are the only
+              hostSetControl UI in the app, and a pre-migration room has nobody
+              holding the pick until the host seeds the ring here. */}
           {teams.length > 0 && (
             <div
               className="mb-3 rounded-2xl border-2 px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2"
@@ -279,9 +284,11 @@ export default function HostGame() {
             teams={teams}
             isHost
             onOpenBuzzer={() => void hostOpenBuzzer(t)}
-            // Every adjudication refreshes the log itself: waiting on the realtime
-            // round trip leaves a stale top row under the host's ✕ for up to 5s,
-            // and a 0-point Wildcard moves no score, so nothing would fire at all.
+            // Each adjudication refreshes the log directly instead of waiting
+            // for the score-change effect: the realtime round trip leaves a
+            // stale top row under the host's undo ✕ for up to 5s, and a
+            // 0-point Wildcard moves no score at all, so the effect would
+            // never fire for it.
             onCorrect={(teamId, delta) => {
               const dd = room.active_is_dd;
               void hostAward(
@@ -435,8 +442,9 @@ export default function HostGame() {
           </button>
         )}
         {revealIdx > 0 && (
-          // Undoing in the history panel reverses the score; this brings the card
-          // back so a mis-tapped ✓/✗ can actually be re-judged.
+          // Companion to the undo panel: host_undo_event only reverses the
+          // score, it cannot re-open the reveal card. This steps back to the
+          // card so a mis-tapped ✓/✗ can actually be re-judged.
           <button
             onClick={() => {
               setAnswerShown(false);
@@ -450,8 +458,8 @@ export default function HostGame() {
         <div className="mt-8 w-full max-w-xl">
           <Leaderboard teams={teams} />
         </div>
-        {/* The biggest swing in the game is judged here, and the card is gone the
-            instant it's tapped. This is the only way back from a mis-tap. */}
+        {/* Undo access during the reveal: the game's biggest score swings are
+            judged here and each card vanishes the instant it's tapped. */}
         <div className="mt-8 w-full max-w-xl text-left">
           <ScoreHistory
             pack={pack}
@@ -477,7 +485,8 @@ export default function HostGame() {
       <div className="w-full max-w-xl mt-6">
         <Leaderboard teams={teams} big />
       </div>
-      {/* Last stop for "that ✗ was wrong" before the reset wipes the log. */}
+      {/* Last chance to undo a misjudgement: host_reset_game and
+          host_delete_room both wipe score_events. */}
       <div className="mt-8 w-full max-w-xl text-left">
         <ScoreHistory
           pack={pack}
@@ -485,8 +494,9 @@ export default function HostGame() {
           onUndo={(id) => void hostUndoEvent(t, id).then(refreshLog)}
         />
       </div>
-      {/* Leaving is also the cleanup: the room and everything under it is
-          deleted, so finished games don't pile up in the database forever. */}
+      {/* Leaving IS the cleanup: host_delete_room drops the room and every
+          child row (cascade), so finished games never pile up in the DB. The
+          confirm() is the only guard on an irreversible action. */}
       <button
         onClick={() => {
           if (
@@ -528,7 +538,10 @@ function BackToBoardButton({ onClick }: { onClick: () => void }) {
   );
 }
 
-// host_reopen_after_miss logs its miss without a label, so fall back to the reason.
+// Display labels for score_events.reason keys. The KEYS are a DB CHECK
+// constraint (schema.sql); rebrand labels only ever change the values here.
+// Used as fallback when an event has no label (host_reopen_after_miss logs
+// its miss without one).
 const REASON_TEXT: Record<ScoreReason, string> = {
   correct: "Correct",
   miss: "Wrong answer",
@@ -538,8 +551,9 @@ const REASON_TEXT: Record<ScoreReason, string> = {
   manual: "Manual adjustment",
 };
 
-// Host-only: labels can hold the correct answer, so this never renders on the
-// projector or a phone. The ✕ is the "Au is gold, not aluminium" recovery path.
+// Host-only panel: labels can hold the correct answer, so this must never be
+// rendered on the projector or a phone. The ✕ calls host_undo_event, the
+// recovery path for a wrong ✓/✗ (e.g. accepting "aluminium" for Au).
 function ScoreHistory({
   pack,
   log,
@@ -598,8 +612,10 @@ function ScoreHistory({
   );
 }
 
-// Lobby repair tool: rename/recolor a team, move or kick a player. Behind a
-// toggle so it never competes with the big "Start game" button.
+// Lobby repair tool: rename/recolor a team, move or kick a player. Kept
+// behind the "Fix teams" toggle so it never competes with Start game. Team
+// deletion is not offered; the server garbage-collects a team when its last
+// player leaves it (lobby phase only).
 function LobbyTeamCard({
   token,
   team,

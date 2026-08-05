@@ -1,6 +1,18 @@
 import { supabase } from "./supabaseClient";
 import type { FinalEntry, Phase, ScoreEvent, ScoreReason } from "./types";
 
+// Every write in the app goes through these SECURITY DEFINER RPCs (defined in
+// supabase/functions.sql); clients have no direct table write access (RLS).
+// Function and p_* argument names are the PostgREST contract: renaming either
+// side alone breaks the call at runtime, not at build time.
+//
+// Failures throw Error(message) where message is a SCREAMING_SNAKE code raised
+// by the SQL (ROOM_NOT_FOUND, TEAM_NAME_TAKEN, ...). TeamJoin.FRIENDLY maps
+// codes to user copy; keep the two lists in sync.
+//
+// host* functions require the host_token minted by createRoom and stored via
+// lib/identity.ts. Player functions authenticate by player_id alone (known
+// accepted risk; see the note on update_player in functions.sql).
 async function rpc<T = void>(fn: string, args: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.rpc(fn, args);
   if (error) throw new Error(error.message);
@@ -28,16 +40,17 @@ export async function joinRoom(opts: {
     {
       p_code: opts.code,
       p_player_name: opts.playerName,
+      // Fallback only; TeamJoin always sends a color from TEAM_COLORS.
+      p_team_color: opts.teamColor ?? "#FFD166",
       p_team_name: opts.teamName ?? null,
-      p_team_color: opts.teamColor ?? "#facc15",
       p_existing_team_id: opts.existingTeamId ?? null,
     }
   );
   return rows[0];
 }
 
-// Rename and/or switch team after joining. Throws the same TEAM_NAME_TAKEN /
-// TEAM_NAME_REQUIRED / TEAM_NOT_FOUND / PLAYER_NOT_FOUND codes as joinRoom.
+// Rename and/or switch team after joining. Shares joinRoom's error codes, plus
+// TEAM_LOCKED_MID_CLUE / TEAM_LOCKED_IN_FINAL when a switch is phase-blocked.
 export async function updatePlayer(opts: {
   playerId: string;
   name?: string;
@@ -151,7 +164,8 @@ export const hostRemovePlayer = (token: string, playerId: string) =>
 export const hostResetGame = (token: string, packId?: string) =>
   rpc("host_reset_game", { p_host_token: token, p_pack_id: packId ?? null });
 
-// Ends the game and deletes the room. Every child table cascades on room_id, so
-// nothing is left behind. The host token dies with it; this is irreversible.
+// Ends the game and deletes the room. Child tables cascade on room_id, and the
+// host token dies with the room: irreversible. Called when the host leaves the
+// results screen.
 export const hostDeleteRoom = (token: string) =>
   rpc("host_delete_room", { p_host_token: token });

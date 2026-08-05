@@ -32,16 +32,20 @@ export default function Play() {
     [players, identity]
   );
 
-  // A just-saved edit wins until the refetch lands; after that the server row
-  // does, since the host can move people between teams too.
+  // Team resolution precedence: a just-saved local edit wins until the refetch
+  // lands, then the server row wins forever (the host can also move players
+  // between teams, so the server must be able to override local memory).
   const myTeam = useMemo(() => {
     const id = savedTeamId ?? me?.team_id ?? identity?.teamId ?? null;
     return id ? teams.find((t) => t.id === id) ?? null : null;
   }, [teams, me, identity, savedTeamId]);
 
-  // Our player row vanishes for good on a host reset, but it also blips missing
-  // mid-refetch, so only bounce to the join screen once it stays missing, or a
-  // hiccup spawns a duplicate player.
+  // Stale-identity detection. Our player row disappears permanently after a
+  // host delete/reset, but it also blips missing mid-refetch. Only bounce to
+  // the join screen once it STAYS missing (debounced); reacting instantly
+  // would make a refetch hiccup re-join and spawn a duplicate player. Longer
+  // grace when the roster is empty: that usually means the first fetch has
+  // not landed yet.
   useEffect(() => {
     if (!identity || me) {
       setStaleIdentity(false);
@@ -105,9 +109,10 @@ export default function Play() {
     void refetch().then(() => setSavedTeamId(null));
   };
 
-  // Team membership is the only ACL on the Last Call submissions and on the
-  // steal lockout, so update_player refuses a switch in those states. Offer
-  // name-only editing there rather than a picker that can only fail.
+  // Mirrors update_player's server-side rule: team membership is the only ACL
+  // on Last Call submissions and the steal lockout, so switches are refused
+  // mid-clue and from final_wager on. Pass nameOnly there so the sheet offers
+  // only what the server will accept.
   const teamLocked =
     room.active_clue_id !== null ||
     room.phase === "final_wager" ||
@@ -115,8 +120,8 @@ export default function Play() {
     room.phase === "final_reveal" ||
     room.phase === "results";
 
-  // The edit sheet lives inside `header` so every phase (including the ones
-  // that only receive it as a prop) can reach it.
+  // The edit sheet rides inside `header` because every phase renders header,
+  // including FinalPhone which only receives it as a prop.
   const header = (
     <>
       <header className="flex items-center gap-3 rounded-2xl bg-white/[0.06] border border-white/10 p-3">
@@ -146,10 +151,11 @@ export default function Play() {
       </header>
 
       {editing && (
-        // The scroll container must not align its child to end/center: overflow
-        // past the START edge isn't scrollable, so on a short phone (or any
-        // landscape) the name field and ✕ would be cut off and unreachable.
-        // The min-h-full wrapper does the aligning instead.
+        // Scroll-container layout constraint: the overflow element itself must
+        // not align its child to end/center, because overflow past the START
+        // edge is unscrollable (CSS), which on short/landscape phones cuts off
+        // the name field and the ✕. The inner min-h-full wrapper aligns
+        // instead, keeping the top edge reachable.
         <div className="fixed inset-0 z-50 bg-black/70 overflow-y-auto p-4">
           <div className="min-h-full flex flex-col justify-end sm:justify-center items-center">
             <div className="w-full max-w-md rounded-3xl bg-stage border border-white/15 p-5 space-y-4">
@@ -263,7 +269,10 @@ export default function Play() {
   );
 }
 
-// Last Call on the phone: secret wager, then secret typed answer.
+// Last Call on the phone: secret wager (final_wager), then secret typed
+// answer (final_clue). One submission row per TEAM, not per player: any
+// teammate can overwrite until the host locks finals. Keyed by phase in the
+// parent so state resets on the wager -> clue transition.
 function FinalPhone({
   phase,
   playerId,
@@ -286,7 +295,8 @@ function FinalPhone({
   const [saved, setSaved] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Restore own team's submission on reload / teammate edit.
+  // Rehydrate this team's submission (reload, or a teammate saved first).
+  // get_my_final only ever returns the caller's own team row.
   useEffect(() => {
     void getMyFinal(playerId).then((f) => {
       if (f) {
@@ -365,8 +375,9 @@ function FinalPhone({
   );
 }
 
-// Our team row can lag a refetch, but if it never resolves the player needs a
-// way back to the join screen instead of staring at a spinner forever.
+// Shown while identity exists but the team row has not resolved. Normally a
+// refetch race that clears in under a second; the escape hatch appears after
+// 3s so a truly broken identity can re-join instead of spinning forever.
 function ResolvingTeam({ onRejoin }: { onRejoin: () => void }) {
   const [stuck, setStuck] = useState(false);
 

@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { serverNow } from "@/lib/serverClock";
 
-// Countdown derived from a shared DB timestamp so every screen agrees.
-// Purely visual: the host adjudicates; nothing auto-fires at zero.
+// Countdown bar. Derived from the shared DB timestamp (openedAt) so host,
+// projector and phones agree on the same zero. Purely visual: nothing
+// auto-fires at zero, the host adjudicates by voice.
 export default function Timer({
   openedAt,
   seconds,
@@ -21,11 +22,12 @@ export default function Timer({
       setRemaining(null);
       return;
     }
-    // openedAt sits in the FUTURE while the buzzer is arming. That window
-    // belongs to the buzzer countdown, so stay hidden until the clock starts.
-    // serverNow() because openedAt is the DB's clock: on a slow device Date.now()
-    // would keep the bar hidden for the whole skew after the clue went live.
-    // Clamped either way so a residual offset can never draw past 100%.
+    // openedAt sits in the FUTURE while the buzzer arms (host_open_buzzer sets
+    // clue_opened_at = buzzer_arms_at); that window belongs to the arming
+    // countdown, so render nothing until the clock starts. Timebase is
+    // serverNow() (lib/serverClock.ts): raw Date.now() on a slow device keeps
+    // the bar hidden for the whole skew after the clue goes live. Clamped both
+    // ends so residual skew can never draw past 100% or below 0.
     const start = new Date(openedAt).getTime();
     const end = start + seconds * 1000;
     const tick = () =>

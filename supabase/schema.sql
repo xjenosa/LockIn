@@ -1,9 +1,14 @@
--- Buzzer: tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
+-- Blare: tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
 -- then functions.sql.
 --
 -- Both files are IDEMPOTENT: re-running them over a live database brings it up
--- to date without touching existing rows. That's why there is no migrations
--- folder. After pulling changes, just run these two again in order.
+-- to date without touching existing rows. There is deliberately no migrations
+-- folder; after changing either file, run both again in order.
+--
+-- Naming contract: dd_* columns implement the Wildcard mechanic and keep their
+-- legacy names on purpose (lib/types.ts and the UI read them). Renaming any
+-- column here silently breaks the typed client reads. localStorage keys and
+-- clue id format have the same freeze; see lib/identity.ts and lib/game.ts.
 
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
@@ -14,14 +19,14 @@ create table if not exists rooms (
   buzzer_open boolean not null default false,
   buzzed_team_id uuid,
   buzzed_player_name text,
-  clue_opened_at timestamptz,                    -- timer anchor; null on a daily double = still in wager stage
+  clue_opened_at timestamptz,                    -- timer anchor; null on a Wildcard = still in wager stage
   timer_seconds int not null default 12,
   locked_out_team_ids uuid[] not null default '{}',
   revealed_clue_ids text[] not null default '{}',
-  control_team_id uuid,                          -- team whose turn it is to pick (default DD team)
-  buzzer_arms_at timestamptz,                    -- buzzer goes live at this moment; earlier taps are ignored
+  control_team_id uuid,                          -- team holding the pick; also the default Wildcard wagering team
+  buzzer_arms_at timestamptz,                    -- buzzer goes live at this moment; claim_buzz drops earlier taps
   pick_order uuid[] not null default '{}',       -- rotation ring of team ids
-  pick_index int not null default 0,             -- whose turn it is: pick_order[pick_index + 1]
+  pick_index int not null default 0,             -- 0-based position; control = pick_order[pick_index + 1] (SQL arrays are 1-indexed)
   active_is_dd boolean not null default false,
   dd_team_id uuid,
   dd_wager int,
@@ -30,8 +35,9 @@ create table if not exists rooms (
   created_at timestamptz not null default now()
 );
 
--- Host secret lives in its own table with NO select policy, so the public
--- anon key can never read it (rooms itself is publicly readable for realtime).
+-- The host secret lives in its own table with NO select policy so the public
+-- anon key can never read it; rooms itself must stay publicly readable for
+-- realtime. Never move host_token onto rooms.
 create table if not exists room_hosts (
   room_id uuid primary key references rooms(id) on delete cascade,
   host_token uuid unique not null default gen_random_uuid()
@@ -55,8 +61,9 @@ create table if not exists players (
   created_at timestamptz not null default now()
 );
 
--- Final round wagers/answers: NO select policy -> phones can't peek at
--- other teams. Host reads them via the host_get_finals RPC.
+-- Last Call wagers/answers, one row per team: NO select policy, so phones
+-- cannot peek at other teams. Host reads via host_get_finals; a player reads
+-- only their own team's row via get_my_final.
 create table if not exists final_submissions (
   team_id uuid primary key references teams(id) on delete cascade,
   room_id uuid not null references rooms(id) on delete cascade,
@@ -65,9 +72,10 @@ create table if not exists final_submissions (
   updated_at timestamptz not null default now()
 );
 
--- Scoring audit trail so a misjudged answer can be taken back. label can hold
--- the correct answer, so like final_submissions it gets NO select policy. The
--- host reads it through the host_get_score_log RPC.
+-- Scoring audit trail; host_undo_event flips reversed instead of deleting.
+-- label can hold the correct answer, so like final_submissions it gets NO
+-- select policy; the host reads it through host_get_score_log. The reason
+-- CHECK list is mirrored by ScoreReason in lib/types.ts.
 create table if not exists score_events (
   id uuid primary key default gen_random_uuid(),
   room_id uuid not null references rooms(id) on delete cascade,
@@ -95,11 +103,12 @@ create table if not exists buzzes (
 );
 
 -- ---------------------------------------------------------------------------
--- Upgrades for databases created before these columns existed.
+-- Upgrade block for databases created before newer columns existed.
 --
 -- "create table if not exists" is a no-op once the table exists, so a column
--- added to the block above would never reach a live database without this.
--- ANY new column must be repeated here, or existing installs silently miss it.
+-- added only to the create block above never reaches a live database. RULE:
+-- every column added to a create block MUST also get an "add column if not
+-- exists" line here, or existing installs silently miss it.
 -- ---------------------------------------------------------------------------
 alter table rooms add column if not exists buzzer_arms_at timestamptz;
 alter table rooms add column if not exists pick_order uuid[] not null default '{}';
@@ -131,8 +140,9 @@ create policy "public read players" on players for select using (true);
 create policy "public read buzzes"  on buzzes  for select using (true);
 
 -- ---------------------------------------------------------------------------
--- Realtime: broadcast row changes for the tables clients watch. score_events is
--- deliberately excluded: broadcasting it would push answer text to every phone.
+-- Realtime publication for the tables clients watch (lib/useRoom.ts).
+-- score_events, final_submissions and room_hosts are deliberately excluded:
+-- broadcasting them would push answers, wagers or the host secret to phones.
 -- ---------------------------------------------------------------------------
 do $$
 declare v_t text;

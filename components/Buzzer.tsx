@@ -5,8 +5,10 @@ import { claimBuzz } from "@/lib/api";
 import { serverNow } from "@/lib/serverClock";
 import type { Room, Team } from "@/lib/types";
 
-// The full-screen phone buzzer. The server decides who was first; this
-// component just fires the RPC fast and renders the shared verdict.
+// The full-screen phone buzzer. The server decides who was first (claim_buzz
+// row lock); this component only fires the RPC fast and renders the shared
+// verdict. Latency rule (BRAND.md): nothing may animate between tap and
+// verdict render.
 export default function Buzzer({
   room,
   myTeam,
@@ -22,10 +24,11 @@ export default function Buzzer({
   const [, setTick] = useState(0);
   const lastArm = useRef<string | null>(null);
 
-  // New clue (or steal reopen) -> re-arm the local button. buzzer_arms_at is in
+  // New clue (or steal reopen) -> release the local latch. buzzer_arms_at is in
   // the key because a steal reopen restores the exact pre-buzz values of the
-  // other three: a client that coalesced the intermediate row (60ms debounce, or
-  // the 5s poll fallback) would never see the key change and would sit out.
+  // other three fields: useRoom coalesces bursts (60ms debounce, 5s poll), so a
+  // client may never observe the intermediate row, and without arms_at in the
+  // key it would sit out the steal.
   useEffect(() => {
     const key = `${room.active_clue_id}:${room.buzzer_open}:${room.buzzed_team_id}:${room.buzzer_arms_at}`;
     if (key !== lastArm.current) {
@@ -34,12 +37,13 @@ export default function Buzzer({
     }
   }, [room.active_clue_id, room.buzzer_open, room.buzzed_team_id, room.buzzer_arms_at]);
 
-  // Anti-spam countdown. This effect only pulses a re-render; armsIn itself is
-  // derived below, because in state it would spend the first frame after a fresh
-  // buzzer_arms_at at 0 and paint a live BUZZ button that claim_buzz then
-  // refuses. It stores the remaining time so React bails out once that settles
-  // at 0. Every open AND every steal reopen stamps a new buzzer_arms_at, so
-  // keying on it alone restarts the count. Null = old room, already armed.
+  // Arming countdown. The effect only pulses re-renders; armsIn is derived at
+  // render because effect state would spend the first frame after a fresh
+  // buzzer_arms_at at 0 and paint a live button that claim_buzz then refuses.
+  // setTick stores the remaining ms so React bails out once it settles at 0.
+  // Every open and every steal reopen stamps a new buzzer_arms_at, so keying
+  // on it alone restarts the count. Null arms_at = pre-migration room, treat
+  // as already armed.
   useEffect(() => {
     if (!room.buzzer_arms_at) return;
     const at = Date.parse(room.buzzer_arms_at);
@@ -47,8 +51,7 @@ export default function Buzzer({
     return () => clearInterval(id);
   }, [room.buzzer_arms_at]);
 
-  // serverNow(), not Date.now(): buzzer_arms_at is the DB's clock, and a device
-  // a few seconds off would arm late (loses every race) or early (tap eaten).
+  // Timebase: serverNow(), never Date.now(). See lib/serverClock.ts.
   const armsIn = room.buzzer_arms_at
     ? Math.max(0, Date.parse(room.buzzer_arms_at) - serverNow())
     : 0;
@@ -56,7 +59,8 @@ export default function Buzzer({
   const lockedOut = room.locked_out_team_ids.includes(myTeam.id);
   const buzzedTeam = teams.find((t) => t.id === room.buzzed_team_id) ?? null;
   const weWon = room.buzzed_team_id === myTeam.id;
-  // host_reveal_answer leaves buzzer_arms_at behind, hence the buzzer_open guard.
+  // buzzer_open guard: host_reveal_answer clears buzzer_open but leaves
+  // buzzer_arms_at set, which must not read as "arming".
   const arming = room.buzzer_open && armsIn > 0;
   const canBuzz =
     room.buzzer_open && armsIn <= 0 && !room.buzzed_team_id && !lockedOut &&
@@ -68,10 +72,11 @@ export default function Buzzer({
     try {
       navigator.vibrate?.(80);
     } catch {}
-    // A refused claim (arms_at not reached, wifi hiccup) changes nothing in
-    // `rooms`, so the optimistic latch has to be released here or the player is
-    // stuck on "…" for the rest of the clue. Losing a real race is still
-    // covered: buzzed_team_id and lockedOut re-disable the button on their own.
+    // A refused claim (arms_at not reached, network hiccup) changes nothing in
+    // rooms, so no realtime event will ever release the optimistic latch; it
+    // must be released here or the player is stuck on the pending state for the
+    // rest of the clue. Losing a real race needs no handling: buzzed_team_id
+    // and lockedOut disable the button through room state.
     void claimBuzz(room.code, playerId, room.active_clue_id)
       .then((r) => {
         if (!r?.won) setLocalBuzzed(false);
@@ -94,7 +99,8 @@ export default function Buzzer({
     label = "😬 Locked out\n(wrong answer)";
     cls = "bg-loss/20 text-white/80";
   } else if (arming) {
-    // Disabled, so early taps are dropped before they ever reach claim_buzz.
+    // Button stays disabled while arming so early taps never reach claim_buzz
+    // (which would refuse them server-side anyway; this saves the round trip).
     label = `⏳ GET READY\n${Math.ceil(armsIn / 1000)}`;
     cls = "bg-white text-ink";
   } else if (canBuzz) {

@@ -1,8 +1,13 @@
 import type { Pack, Clue } from "@/content/types";
 import type { Room } from "./types";
 
+// Row values of every board column, ascending. Packs must use exactly these
+// (content/types.ts invariant); clue ids are derived from them.
 export const VALUES = [200, 400, 600, 800, 1000];
 
+// Clue id format "c{catIdx}-{value}" is a persistence contract: rooms stores
+// these strings (active_clue_id, revealed_clue_ids, score_events.clue_id), so
+// changing the format orphans the board state of any live game.
 export const clueId = (catIdx: number, value: number) => `c${catIdx}-${value}`;
 
 export function parseClueId(id: string): { catIdx: number; value: number } | null {
@@ -23,9 +28,10 @@ export function getCategoryName(pack: Pack, id: string): string {
   return parsed ? pack.categories[parsed.catIdx]?.name ?? "" : "";
 }
 
-// The column just played, which can't be picked again immediately. Returns null
-// when nothing is locked, including the endgame case where every remaining
-// clue is in that column, since locking it there would deadlock the board.
+// House rule: the column just played cannot be picked again immediately.
+// Returns null when nothing is locked, including the endgame case where every
+// remaining clue sits in that column (locking it there would deadlock the
+// board). Purely a UI constraint; the server does not enforce it.
 export function lockedCategoryIdx(room: Room, pack: Pack): number | null {
   const last = room.revealed_clue_ids[room.revealed_clue_ids.length - 1];
   const idx = last ? parseClueId(last)?.catIdx ?? null : null;

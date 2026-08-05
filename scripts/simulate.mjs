@@ -1,11 +1,15 @@
-// Headless playtest harness. Drives the same RPCs the app calls, but does
-// things humans physically can't: 20 phones buzzing in the same millisecond,
-// a tap 50ms before the buzzer arms, 200 undos in a row.
+// Headless test harness: the closest thing this repo has to a test suite.
+// Drives the production RPCs (supabase/functions.sql) exactly as the app
+// does, but at inhuman intensity: 20 buzzes in the same millisecond, taps
+// before the buzzer arms, concurrent undo storms. Run it after ANY change to
+// functions.sql or schema.sql.
 //
 //   node scripts/simulate.mjs            # all suites
-//   node scripts/simulate.mjs buzz undo  # named suites only
+//   node scripts/simulate.mjs buzz undo  # named suites only (keys in suite() calls)
 //
-// Reads .env.local. Creates real (throwaway) rooms in your Supabase project.
+// Requires .env.local. Creates real throwaway rooms in the live Supabase
+// project; they are ordinary rooms, so cleanup.sql's stale purge removes them.
+// Exit code 0 = all checks passed.
 
 import { readFileSync } from "fs";
 import { createClient } from "@supabase/supabase-js";
@@ -64,7 +68,7 @@ async function freshGame(n = 3) {
       p_code: code,
       p_player_name: `P${i}`,
       p_team_name: `Team ${i}`,
-      p_team_color: "#facc15",
+      p_team_color: "#FFD166",
       p_existing_team_id: null,
     });
     players.push(p);
@@ -192,7 +196,7 @@ await suite("rotation", only, "turn rotation", async () => {
   // Mid-game joiner lands in the ring.
   await rpc("join_room", {
     p_code: g.code, p_player_name: "Latecomer", p_team_name: "Team late",
-    p_team_color: "#facc15", p_existing_team_id: null,
+    p_team_color: "#FFD166", p_existing_team_id: null,
   });
   await rpc("host_open_clue", { p_host_token: g.token, p_clue_id: "c5-1000", p_is_dd: false, p_timer: 12 });
   await rpc("host_close_clue", { p_host_token: g.token });
@@ -225,7 +229,8 @@ await suite("undo", only, "score ledger and undo", async () => {
   l = await ledgerMatches(g.token, g.roomId);
   check("ledger still matches after undo", l.ok, l.bad.join("; "));
 
-  // The Au-vs-aluminium scenario: undo twice, must not double-refund.
+  // Double-undo of the same event (double tap / request retry) must not
+  // double-refund; host_undo_event's reversed flag is the guard.
   await rpc("host_undo_event", { p_host_token: g.token, p_event_id: first.id });
   await rpc("host_undo_event", { p_host_token: g.token, p_event_id: first.id });
   eq("double-undo does not double-refund",
@@ -334,7 +339,7 @@ await suite("identity", only, "player identity edits", async () => {
   } catch { ok = false; }
   check("team switch works between clues", ok, "blocked when it should be allowed");
 
-  // Final round must refuse team switches (protects wagers).
+  // Last Call must refuse team switches (team membership is the wager ACL).
   await rpc("host_set_phase", { p_host_token: g.token, p_phase: "final_wager", p_timer: null });
   let inFinal = "";
   try {
@@ -343,7 +348,7 @@ await suite("identity", only, "player identity edits", async () => {
       p_new_team_name: null, p_new_team_color: null,
     });
   } catch (e) { inFinal = e.message; }
-  check("team switch is blocked during the Final Round", /TEAM_LOCKED_IN_FINAL/.test(inFinal), `got: ${inFinal || "no error"}`);
+  check("team switch is blocked during Last Call", /TEAM_LOCKED_IN_FINAL/.test(inFinal), `got: ${inFinal || "no error"}`);
 });
 
 // --- 9. Full game playthrough ---------------------------------------------
@@ -383,7 +388,7 @@ await suite("game", only, "full game playthrough", async () => {
   }
   await rpc("host_set_phase", { p_host_token: g.token, p_phase: "final_clue", p_timer: 60 });
   for (const p of g.players) {
-    await rpc("submit_final", { p_player_id: p.player_id, p_wager: null, p_answer: "What is Barbenheimer?" });
+    await rpc("submit_final", { p_player_id: p.player_id, p_wager: null, p_answer: "Barbenheimer" });
   }
   await rpc("host_set_phase", { p_host_token: g.token, p_phase: "final_reveal", p_timer: null });
 

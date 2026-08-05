@@ -8,8 +8,10 @@ import type { Room, Team } from "@/lib/types";
 import AnswerPeek from "./AnswerPeek";
 import Timer from "./Timer";
 
-// Full-screen clue. Used by the host (isHost -> control bar) and the
-// projector page (read-only). All state comes from the shared room row.
+// Full-screen clue overlay. Two consumers: the host page (isHost adds the
+// adjudication bar) and the projector page (read-only). All state is the
+// shared rooms row; this component holds no game state of its own, only the
+// wager form inputs.
 export default function ClueView({
   pack,
   room,
@@ -44,10 +46,11 @@ export default function ClueView({
   const [wagerInput, setWagerInput] = useState("");
   const [ddTeamInput, setDDTeamInput] = useState(room.dd_team_id ?? "");
 
-  // Arming window ticks off the shared buzzer_arms_at so every phone, the host
-  // and the projector count down to the same instant. Derived during render like
-  // the phone's (effect state shows one stale frame), against the DB clock; the
-  // effect only pulses a re-render, and settles at 0 so React can bail out.
+  // Arming countdown, same construction as Buzzer.tsx: armLeft derived at
+  // render (effect state would show one stale frame), measured against
+  // serverNow() (lib/serverClock.ts), effect only pulses re-renders and
+  // settles at 0 so React can bail out. Keeps host, projector and phones
+  // counting to the same instant.
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!room.buzzer_arms_at) return;
@@ -65,9 +68,13 @@ export default function ClueView({
   // ---------- Wildcard wager splash ----------
   if (ddWagerStage) {
     const chosen = teams.find((t) => t.id === (ddTeamInput || room.dd_team_id));
+    // House rule: a Wildcard team may always wager up to 1000 even on a lower
+    // (or negative) score. Mirrors nothing server-side; host_set_dd_wager only
+    // clamps below at 0.
     const maxWager = chosen ? Math.max(chosen.score, 1000) : 1000;
-    // A blank box used to parse to 0 and silently lock in a wager of nothing,
-    // so the team played the square for free. Require a deliberate number.
+    // wagerNum stays null unless the input is a real number: a blank box used
+    // to parse to 0 and silently lock a wager of nothing, letting the team
+    // play the square for free.
     const wagerNum = /^\d+$/.test(wagerInput.trim()) ? parseInt(wagerInput.trim(), 10) : null;
     return (
       <div className="fixed inset-0 bg-stage flex flex-col items-center justify-center p-6 text-center gap-6 z-40">
@@ -171,7 +178,8 @@ export default function ClueView({
                 {room.buzzed_player_name ? `: ${room.buzzed_player_name}` : ""}
               </div>
             ) : arming ? (
-              // key remounts each second so every number pops on its own.
+              // key remounts the block each second so each digit replays the
+              // pop animation.
               <div key={Math.ceil(armLeft)} className="animate-pop flex flex-col items-center">
                 <p className="font-display uppercase tracking-[0.3em] text-white/60 text-lg md:text-2xl">
                   Get ready
@@ -199,8 +207,10 @@ export default function ClueView({
 
       {isHost && (
         <div className="relative bg-black/60 backdrop-blur border-t border-white/10 px-4 py-3 flex flex-wrap items-center justify-center gap-2 md:gap-3">
-          {/* Sits left of ✓/✗: check the answer, then adjudicate. Doubles as the
-              reveal button: hold to peek privately, tap to show the room. */}
+          {/* Placed left of ✓/✗ so the host reads the answer, then judges.
+              Doubles as the reveal control: hold = private peek, tap = show
+              the room (see AnswerPeek's header for why that split is load-
+              bearing on a projected screen). */}
           <AnswerPeek text={clue.answer} revealed={room.answer_revealed} onReveal={onReveal} />
           {room.active_is_dd ? (
             <>

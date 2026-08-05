@@ -13,8 +13,10 @@ import { getPack } from "@/content/packs";
 import { fmtScore, lockedCategoryIdx } from "@/lib/game";
 import { useRoom } from "@/lib/useRoom";
 
-// Read-only projector view. Put THIS on the big screen; keep host controls
-// on your laptop at /host/[code].
+// Read-only projector mirror: THIS goes on the big screen, host controls stay
+// on the laptop at /host/[code]. Never render anything secret here: no
+// answers before answer_revealed, no wagers before the host reveals them, no
+// score log.
 export default function Projector() {
   const params = useParams<{ code: string }>();
   const code = (params.code ?? "").toUpperCase();
@@ -47,8 +49,9 @@ export default function Projector() {
   }
 
   if (room.phase === "playing") {
-    // Turn order rotates team-to-team, so the room can only follow along if the
-    // projector says whose pick it is.
+    // The projector must announce whose pick it is: turn order rotates
+    // team-to-team (anti-sweep rule in host_close_clue) and the room has no
+    // other way to follow it.
     const controlTeam = teams.find((t) => t.id === room.control_team_id) ?? null;
     return (
       <main className="min-h-dvh p-4 md:p-8 flex flex-col gap-4">

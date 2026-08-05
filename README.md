@@ -10,7 +10,7 @@ Live **team buzzer trivia** for in-person events. The host projects the board an
 2. In the Supabase **SQL Editor**, paste & run [`supabase/schema.sql`](supabase/schema.sql), then [`supabase/functions.sql`](supabase/functions.sql).
    - **Both files are idempotent.** Run them on a brand-new project or over a live one. After pulling changes, just run the two again in order. There are no migration files to track.
    - The schema also enables Realtime on `rooms` / `teams` / `players`. Verify under **Database → Replication** that the `supabase_realtime` publication includes all three. (There's a 5-second polling fallback, but realtime makes buzzes feel instant.)
-   - [`supabase/cleanup.sql`](supabase/cleanup.sql) is optional maintenance, not setup; every statement in it is commented out by default.
+   - [`supabase/cleanup.sql`](supabase/cleanup.sql) is optional maintenance, not setup. Its top section is safe to run any time; the destructive extras below the divider are commented out.
 3. **Keys** from Project Settings → API: copy the **Project URL** and the **anon/publishable key**.
 4. Copy `.env.local.example` → `.env.local` and fill both values. The URL must be the **bare** project URL (no `/rest/v1/`).
 

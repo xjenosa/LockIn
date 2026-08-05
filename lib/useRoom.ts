@@ -5,8 +5,12 @@ import { syncServerClock } from "./serverClock";
 import { supabase } from "./supabaseClient";
 import type { Player, Room, Team } from "./types";
 
-// Live room state: realtime subscription + refetch-on-event, with a slow
-// polling fallback so the game still works if Realtime isn't enabled.
+// Live room state. Three redundant update paths, all funneling into fetchAll:
+// realtime change events (fast path), a 5s poll (works even when the Realtime
+// publication is missing), and a visibilitychange refetch (phones returning
+// from sleep). Consumers must tolerate coalesced updates: bursts collapse into
+// one refetch, so intermediate row states may never be observed. Buzzer.tsx
+// re-arm logic is written around exactly that.
 export function useRoom(code: string) {
   const [room, setRoom] = useState<Room | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -36,7 +40,7 @@ export function useRoom(code: string) {
     setPlayers((p as Player[]) ?? []);
   }, [code]);
 
-  // Collapse bursts of change events into one refetch.
+  // Collapse event bursts into one refetch after 60ms of quiet-ish arrival.
   const scheduleRefetch = useCallback(() => {
     if (pendingRef.current) return;
     pendingRef.current = true;
@@ -48,8 +52,11 @@ export function useRoom(code: string) {
 
   useEffect(() => {
     void fetchAll();
-    void syncServerClock();   // countdowns compare DB timestamps to this device's clock
+    void syncServerClock(); // one-time skew sync; see lib/serverClock.ts
 
+    // rooms filters server-side by code. teams/players cannot (their rows only
+    // carry room_id, unknown until the first fetch), so they subscribe to the
+    // whole table and filter client-side against roomIdRef.
     const channel = supabase
       .channel(`room-${code}`)
       .on(

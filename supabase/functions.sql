@@ -1,13 +1,19 @@
--- Buzzer: RPC functions. Run AFTER schema.sql.
--- All functions are SECURITY DEFINER (they bypass RLS); host functions verify
--- host_token against room_hosts before mutating anything.
+-- Blare: RPC functions. Run AFTER schema.sql.
+-- All functions are SECURITY DEFINER (they bypass RLS); every host_* function
+-- authenticates via _room_by_host before mutating anything. Function names and
+-- p_* argument names are the PostgREST contract with lib/api.ts; renaming
+-- either side alone breaks calls at runtime.
+--
+-- Exceptions raised with SCREAMING_SNAKE messages are error codes the client
+-- maps to copy (TeamJoin.FRIENDLY). Keep codes stable.
 --
 -- IDEMPOTENT: everything here is "create or replace", so re-running this over a
--- live database just updates the functions in place. No migrations folder.
+-- live database updates the functions in place. No migrations folder.
 
--- Postgres keys functions on argument types, so re-running this file over an
--- older install would leave the pre-migration signatures behind and make
--- PostgREST calls ambiguous.
+-- Postgres overloads functions by argument types, so when a function's
+-- signature changes, its OLD signature must be dropped here or re-running the
+-- file leaves both behind and PostgREST calls become ambiguous. Append a drop
+-- for every signature change; never edit these into being non-idempotent.
 drop function if exists host_open_buzzer(uuid);
 drop function if exists host_reopen_after_miss(uuid, int);
 drop function if exists host_award(uuid, uuid, int, boolean);
@@ -28,8 +34,10 @@ begin
 end $$;
 
 -- Rotating turn order: prune ring entries whose team was deleted, append teams
--- that joined mid-game, then hand control to the next one. The current position
--- is re-derived from control_team_id because pruning shifts pick_index.
+-- that joined mid-game (created_at order), then hand control to the next one.
+-- Position is re-derived from control_team_id because pruning shifts
+-- pick_index. The host page's "next up" preview reimplements the prune+append;
+-- keep them in step.
 create or replace function _advance_control(p_room_id uuid)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -80,17 +88,18 @@ begin
   where id = p_room_id;
 end $$;
 
--- These two take a room id rather than a secret, so they must not be reachable
--- from the anon key or anyone could skip another table's turn.
+-- These two helpers take a room id rather than a secret, so they must never be
+-- callable with the anon key: anyone could skip another team's turn. Any new
+-- helper keyed by room id needs the same revoke.
 revoke all on function _advance_control(uuid) from public, anon, authenticated;
 revoke all on function _forget_team(uuid, uuid) from public, anon, authenticated;
 
 -- =========================== anyone ========================================
 
--- Every countdown (buzzer_arms_at, clue_opened_at) is a Postgres timestamp, but
--- it is drawn against the device clock. One reading of ours lets each client
--- correct for its own skew. Without it a phone a few seconds slow arms its
--- buzzer late and loses every race it should have won.
+-- Clock reference for clients (lib/serverClock.ts). Countdown timestamps
+-- (buzzer_arms_at, clue_opened_at) are DB time but rendered against device
+-- clocks; one reading lets each client correct its own skew. Without it a
+-- phone a few seconds slow arms late and loses every race.
 create or replace function server_now()
 returns timestamptz
 language sql stable security definer set search_path = public as $$
@@ -105,7 +114,7 @@ declare
   v_room_id uuid;
   v_token uuid;
 begin
-  -- 4-char code from an unambiguous alphabet; retry on collision
+  -- 4-char room code from an alphabet with no 0/O/1/I/L; loops on collision
   loop
     v_code := (
       select string_agg(substr('ABCDEFGHJKMNPQRSTUVWXYZ23456789',
@@ -146,8 +155,9 @@ begin
   select * into v_room from rooms where rooms.code = upper(trim(p_code));
   if not found then raise exception 'ROOM_NOT_FOUND'; end if;
 
-  -- Late joiners mid-game are fine, but from the Final Round on a new team can
-  -- only appear with $0 and no wager. host_reset_game reopens the room.
+  -- Late joiners mid-game are fine, but from Last Call on a new team could
+  -- only appear with 0 points and no wager, so the room closes. host_reset_game
+  -- reopens it.
   if v_room.phase in ('final_wager', 'final_clue', 'final_reveal', 'results') then
     raise exception 'GAME_CLOSED';
   end if;
@@ -228,13 +238,14 @@ begin
   end if;
 
   -- Team membership is the only ACL on final_submissions and on the steal
-  -- lockout, so switching teams freezes while a clue is live and for the whole
-  -- Final Round; renaming yourself stays available in every phase. Mid-game
-  -- moves go through host_move_player, which is token-guarded.
-  -- NOTE: this function still authenticates by p_player_id alone, exactly as
-  -- claim_buzz and submit_final do, and player ids are publicly readable. A
-  -- per-player secret token would close that properly, but it needs client+schema
-  -- changes, so it is left as the repo owner's call.
+  -- lockout, so team switches freeze while a clue is live and from final_wager
+  -- on; renaming yourself stays available in every phase. Mid-game moves go
+  -- through host_move_player, which is token-guarded.
+  -- ACCEPTED RISK: this function authenticates by p_player_id alone, exactly
+  -- as claim_buzz and submit_final do, and player ids are publicly readable
+  -- (players has a public select policy). A per-player secret would close
+  -- that, at the cost of client+schema changes. Known and deferred; do not
+  -- treat as an oversight.
   if v_team.id is distinct from v_old_team then
     if v_room.phase in ('final_wager','final_clue','final_reveal','results') then
       raise exception 'TEAM_LOCKED_IN_FINAL';
@@ -261,11 +272,14 @@ begin
   return query select v_player.id, v_team.id, v_team.name;
 end $$;
 
--- The critical one: atomic first-to-buzz. The FOR UPDATE row lock serializes
--- simultaneous buzzes; the first transaction through wins, the rest see the
--- winner already set and lose. Server receipt order: client clocks never matter.
--- buzzer_arms_at is the anti-spam gate: taps before it are silently dropped,
--- and it lives here because a client-side check is just a dare.
+-- The core primitive: atomic first-to-buzz. The FOR UPDATE on the rooms row
+-- serializes simultaneous buzzes; the first transaction wins, the rest observe
+-- the winner already set and return won=false. Ordering is server receipt
+-- order; client clocks never matter. buzzer_arms_at is the server-side
+-- anti-spam gate (early taps return won=false with no other effect); the
+-- client also disables its button while arming, but only this check is
+-- authoritative. Returns won rather than raising so a losing tap costs no
+-- exception round trip.
 create or replace function claim_buzz(p_code text, p_player_id uuid, p_clue_id text)
 returns table (won boolean, team_id uuid, team_name text)
 language plpgsql security definer set search_path = public as $$
@@ -301,8 +315,10 @@ begin
   end if;
 end $$;
 
--- Wager during final_wager; answer during final_wager/final_clue. Upserts the
--- caller's TEAM row, so any teammate can edit until the host locks finals.
+-- Last Call submissions. Wager accepted only during final_wager (and clamped
+-- to [0, max(score, 0)] server-side); answer accepted during final_wager and
+-- final_clue. Upserts the caller's TEAM row, so any teammate can edit until
+-- finals_locked; last save wins.
 create or replace function submit_final(p_player_id uuid, p_wager int default null, p_answer text default null)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -335,7 +351,8 @@ begin
   end if;
 end $$;
 
--- Lets a reloading phone re-read its own team's secret submission (only its own).
+-- Rehydration read: a reloading phone re-reads its own team's secret
+-- submission. The join path makes reading any other team's row impossible.
 create or replace function get_my_final(p_player_id uuid)
 returns table (wager int, answer text)
 language plpgsql security definer set search_path = public as $$
@@ -349,7 +366,7 @@ end $$;
 
 -- =========================== host ==========================================
 
--- Seed the rotation ring in join order; first team picks first.
+-- lobby -> playing. Seeds the rotation ring in join order; first team picks.
 create or replace function host_start_game(p_host_token uuid)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -384,7 +401,7 @@ begin
     active_is_dd = p_is_dd,
     dd_team_id = case when p_is_dd then coalesce(control_team_id, dd_team_id) else null end,
     dd_wager = null,
-    buzzer_open = false,          -- host opens the buzzer separately, after reading aloud
+    buzzer_open = false,          -- buzzers open in a separate host action, after the clue is read aloud
     buzzed_team_id = null,
     buzzed_player_name = null,
     buzzer_arms_at = null,
@@ -395,8 +412,10 @@ begin
   where id = v_room.id;
 end $$;
 
--- clue_opened_at is pushed to the arming moment so the answer clock only starts
--- once the buzzer is actually live; the countdown is not part of their time.
+-- Opens buzzers with an arming delay. clue_opened_at is pushed to the arming
+-- moment so the answer clock starts when the buzzer is actually live; the
+-- countdown does not consume the teams' time. Timer.tsx relies on
+-- clue_opened_at possibly being in the future because of this.
 create or replace function host_open_buzzer(p_host_token uuid, p_arm_seconds int default 3)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -416,7 +435,9 @@ begin
   where id = v_room.id;
 end $$;
 
--- Daily Double: host picks the wagering team + amount, which also reveals the clue.
+-- Wildcard (dd_*): host locks the wagering team + amount; setting
+-- clue_opened_at doubles as "reveal the clue" (see ClueView's ddWagerStage).
+-- Wager clamped at 0 below; the max is a client-side house rule.
 create or replace function host_set_dd_wager(p_host_token uuid, p_team_id uuid, p_wager int)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -430,8 +451,9 @@ begin
   where id = v_room.id;
 end $$;
 
--- Wrong answer: penalize + lock out the buzzed team, reopen for steals. The
--- penalty is logged so host_undo_event can put it back and lift the lockout.
+-- Wrong answer on a normal clue: penalize + lock out the buzzed team, reopen
+-- for steals with a fresh arming window. Logs a 'miss' event (no label) so
+-- host_undo_event can refund the points and lift the lockout.
 create or replace function host_reopen_after_miss(
   p_host_token uuid,
   p_penalty int,
@@ -457,14 +479,15 @@ begin
     buzzed_player_name = null,
     buzzer_open = true,
     buzzer_arms_at = v_arms,
-    answer_revealed = false,      -- the host may have revealed it to explain the miss;
-                                  -- the steal cannot run with it up on the projector
+    answer_revealed = false,      -- host may have revealed it explaining the miss;
+                                  -- the steal cannot run with it on the projector
     clue_opened_at = v_arms       -- fresh timer for the steal, starting when it arms
   where id = v_room.id;
 end $$;
 
--- Every score change is logged. Control no longer follows the points; the
--- rotation in host_close_clue owns that now.
+-- The single write path for every score change; always logs a score_event.
+-- Deliberately does NOT touch control_team_id: turn order is owned by the
+-- rotation in host_close_clue, not by who scored.
 create or replace function host_award(
   p_host_token uuid,
   p_team_id uuid,
@@ -485,8 +508,9 @@ begin
   values (v_room.id, p_team_id, p_delta, coalesce(p_reason, 'manual'), p_clue_id, p_label);
 end $$;
 
--- Take back a misjudgement. Idempotent: the reversed flag makes a second call
--- (double tap, retried request) a no-op.
+-- Take back a misjudgement: apply -delta and flag the event reversed rather
+-- than deleting it. Idempotent under double taps and request retries: the
+-- reversed filter plus FOR UPDATE make the second call a no-op.
 create or replace function host_undo_event(p_host_token uuid, p_event_id uuid)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -503,9 +527,9 @@ begin
   update teams set score = score - v_ev.delta where id = v_ev.team_id;
   update score_events e set reversed = true where e.id = v_ev.id;
 
-  -- Undoing a miss must also lift the steal lockout, or the team stays frozen
-  -- out of a clue they were never actually wrong on, but only if the miss is on
-  -- the clue that is live now. Re-judging an old one must not unlock the current.
+  -- Undoing a miss also lifts the steal lockout, else the team stays frozen
+  -- out of a clue they were never wrong on. Scoped to the currently-live clue:
+  -- re-judging an OLD miss must not unlock whoever is locked out now.
   if v_ev.reason = 'miss' and v_ev.clue_id is not distinct from v_room.active_clue_id then
     update rooms set locked_out_team_ids = array_remove(locked_out_team_ids, v_ev.team_id)
      where id = v_room.id;
@@ -540,8 +564,10 @@ begin
   update rooms set answer_revealed = true, buzzer_open = false where id = v_room.id;
 end $$;
 
--- Turn passes team-to-team here, not to whoever answered: one sharp player
--- sweeping a whole category is what killed the last playtest.
+-- Closes the clue and rotates control. Anti-sweep rule: the turn passes
+-- team-to-team around the ring, NOT to whoever answered correctly; letting the
+-- winner keep picking let one sharp player sweep whole categories in
+-- playtesting. Do not "fix" control to follow the points.
 create or replace function host_close_clue(p_host_token uuid)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -565,15 +591,17 @@ begin
     answer_revealed = false,
     clue_opened_at = null
   where id = v_room.id;
-  -- Only rotate if this call is the one that actually closed a clue. A double
-  -- tap on "← Back to board" would otherwise skip a team's turn entirely.
+  -- Rotate only when this call actually closed a clue (v_room holds the
+  -- pre-update row). Rotating unconditionally would let a double tap on
+  -- "Back to board" skip a team's turn.
   if v_room.active_clue_id is not null then
     perform _advance_control(v_room.id);
   end if;
 end $$;
 
 -- Host override: hand the pick to a specific team (skipped turn, late joiner,
--- "you go again"). The ring resumes from there.
+-- "you go again"). Appends an unknown team to the ring; rotation resumes from
+-- the new position.
 create or replace function host_set_control(p_host_token uuid, p_team_id uuid)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -594,8 +622,10 @@ begin
   where id = v_room.id;
 end $$;
 
--- Phase transitions. Entering final_clue starts the answer timer; entering
--- final_reveal locks all submissions.
+-- Phase transitions (the only way phase changes). Entering final_clue starts
+-- the answer timer; entering final_reveal or results locks submissions
+-- permanently (finals_locked never resets except by host_reset_game). Also
+-- clears any live clue state so a phase jump cannot strand an open buzzer.
 create or replace function host_set_phase(p_host_token uuid, p_phase text, p_timer int default null)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -697,7 +727,9 @@ begin
   update rooms set finals_locked = true where id = v_room.id;
 end $$;
 
--- Host-only read of every team's secret wager + answer, for the reveal.
+-- Host-only read of every team's secret wager + answer for the reveal. LEFT
+-- join: teams that never submitted still appear, zero-filled, so the reveal
+-- never silently skips a team.
 create or replace function host_get_finals(p_host_token uuid)
 returns table (team_id uuid, team_name text, color text, score int, wager int, answer text)
 language plpgsql security definer set search_path = public as $$
@@ -713,8 +745,9 @@ begin
      order by t.score desc, t.created_at;
 end $$;
 
--- Play again: zero scores, clear the board + finals, back to lobby.
--- Optionally switch to a different question pack.
+-- Play again: zero scores, wipe finals + score log, clear the board, back to
+-- lobby. Teams and players survive; the room code stays valid. Optionally
+-- switches packs (p_pack_id must exist in content/packs/index.ts).
 create or replace function host_reset_game(p_host_token uuid, p_pack_id text default null)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -746,8 +779,9 @@ begin
   where id = v_room.id;
 end $$;
 
--- The host leaving the results screen ends the game and wipes it. Child tables
--- all cascade on room_id, so deleting the room row removes everything.
+-- Ends the game for good: deleting the room row cascades to every child table
+-- (teams, players, buzzes, score_events, final_submissions, room_hosts).
+-- Called when the host leaves the results screen. Irreversible.
 create or replace function host_delete_room(p_host_token uuid)
 returns void
 language plpgsql security definer set search_path = public as $$
@@ -757,12 +791,11 @@ begin
   delete from rooms where id = v_room.id;
 end $$;
 
--- Safety net for games the host never closed out. Hours, not days: a party game
--- is over in about two, so "older than a few hours" is the useful granularity
--- and days is too coarse to clear the same evening's mess.
--- Not exposed to clients: it takes no secret, so anyone could call it and wipe
--- live games. Returns the number of rooms deleted.
-drop function if exists delete_stale_rooms(int);   -- renamed p_days -> p_hours
+-- Maintenance purge for games the host never closed out (see cleanup.sql).
+-- Parameter is HOURS: a session lasts about two, so hour granularity can clear
+-- the same evening's abandoned rooms. Takes no secret, so it is revoked from
+-- clients below: exposed, anyone could wipe live games. Returns rooms deleted.
+drop function if exists delete_stale_rooms(int);   -- old signature took days; see the drop rule at the top
 
 create or replace function delete_stale_rooms(p_hours int default 24)
 returns int
