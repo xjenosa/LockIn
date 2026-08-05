@@ -29,7 +29,7 @@ Two-color logic carries the whole identity:
 
 ## 3. Color tokens
 
-Defined in `tailwind.config.ts`. Old Jeopardy tokens (board, boarddark, boardcell, gold, goldsoft) are deleted, not aliased.
+Defined in `tailwind.config.ts`. The old quiz-show tokens (board, boarddark, boardcell, gold, goldsoft) are deleted, not aliased.
 
 | Token | Hex | Role | Contrast notes (approx.) |
 |---|---|---|---|
@@ -79,7 +79,7 @@ Hard rule: no animation between tap and result. The buzz verdict renders the ins
 - **Clue view**: full-screen stage with a faint teal glow from the top. Category eyebrow and value up top, clue in big white sentence-case display type. Arming: "GET READY" eyebrow and a giant signal digit popping each second. Open: "BUZZERS LIVE" pulsing in signal.
 - **Buzz-in**: the loudest thing in the room. A white card pops in with a thick team-color border, a siren emoji, team and player name in ink. Renders the instant the server verdict lands.
 - **Answer reveal**: the answer pops in below the clue in signal display type with a teal text glow.
-- **Wildcard splash** (was Daily Double): stage flooded with a coral radial glow, WILDCARD! in flare display caps with a flare glow, wager form on a quiet card, lock button in flare.
+- **Wildcard splash** (the secret-wager bonus clue): stage flooded with a coral radial glow, WILDCARD! in flare display caps with a flare glow, wager form on a quiet card, lock button in flare.
 - **Phone buzzer**: one giant rounded-3xl button. Idle slate "Wait for it", white GET READY with the countdown, then full signal teal BLARE! with the teal pulse glow. Winner state flips to signal with "YOU'RE FIRST!". Locked out is dim loss red. Wildcard state is flare: "Look up!".
 - **Last Call** (was Final Round): every phase of it is flare-coded. Host and projector show a LAST CALL eyebrow in flare, wagers render in flare, the reveal runs on quiet cards with signal for the reveal action and win/loss for judgment.
 - **Winner**: confetti falls, CHAMPIONS eyebrow in signal, winner name pops in their team color.
