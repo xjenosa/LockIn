@@ -1,7 +1,7 @@
 export type Clue = {
   value: number; // 200 | 400 | 600 | 800 | 1000
   clue: string; // shown on the board ("This snake-named language…")
-  answer: string; // the spoken response ("What is Python?")
+  answer: string; // the spoken response ("Python")
   image?: string; // optional /public path or URL
   dailyDouble?: boolean; // controlling team wagers; no buzzing
 };
