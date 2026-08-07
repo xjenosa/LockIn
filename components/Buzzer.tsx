@@ -9,6 +9,14 @@ import type { Room, Team } from "@/lib/types";
 // row lock); this component only fires the RPC fast and renders the shared
 // verdict. Latency rule (BRAND.md): nothing may animate between tap and
 // verdict render.
+//
+// Anti-spam: a tap during the arming countdown is a false start, not a buzz. It
+// locks the phone out for PENALTY_MS after buzzers open, so mashing through the
+// countdown loses to a clean reaction. This also enforces fresh-press: a buzz
+// only ever fires from a new pointerdown while live, never a press carried in
+// from arming.
+const PENALTY_MS = 750;
+
 export default function Buzzer({
   room,
   myTeam,
@@ -21,6 +29,8 @@ export default function Buzzer({
   playerId: string;
 }) {
   const [localBuzzed, setLocalBuzzed] = useState(false);
+  // False-start latch: set when this phone taps during the arming countdown.
+  const [jumped, setJumped] = useState(false);
   const [, setTick] = useState(0);
   const lastArm = useRef<string | null>(null);
 
@@ -33,6 +43,7 @@ export default function Buzzer({
     const key = `${room.active_clue_id}:${room.buzzer_open}:${room.buzzed_team_id}:${room.buzzer_arms_at}`;
     if (key !== lastArm.current) {
       lastArm.current = key;
+      setJumped(false); // each new clue / steal reopen is a fresh false-start chance
       if (room.buzzer_open && !room.buzzed_team_id) setLocalBuzzed(false);
     }
   }, [room.active_clue_id, room.buzzer_open, room.buzzed_team_id, room.buzzer_arms_at]);
@@ -51,10 +62,28 @@ export default function Buzzer({
     return () => clearInterval(id);
   }, [room.buzzer_arms_at]);
 
+  // A false-start lockout lifts PENALTY_MS after buzzers open. The arming ticker
+  // has already settled at 0 by then, so schedule the single re-render that
+  // re-enables the button; without it the phone stays locked until the next
+  // room push.
+  useEffect(() => {
+    if (!jumped || !room.buzzer_arms_at) return;
+    const ms = Date.parse(room.buzzer_arms_at) + PENALTY_MS - serverNow();
+    if (ms <= 0) return;
+    const id = setTimeout(() => setTick((t) => t + 1), ms);
+    return () => clearTimeout(id);
+  }, [jumped, room.buzzer_arms_at]);
+
   // Timebase: serverNow(), never Date.now(). See lib/serverClock.ts.
   const armsIn = room.buzzer_arms_at
     ? Math.max(0, Date.parse(room.buzzer_arms_at) - serverNow())
     : 0;
+  // Remaining false-start penalty: 0 unless this phone jumped, then counting
+  // down from the open moment. A jumped phone cannot buzz until it reaches 0.
+  const penaltyLeft =
+    jumped && room.buzzer_arms_at
+      ? Math.max(0, Date.parse(room.buzzer_arms_at) + PENALTY_MS - serverNow())
+      : 0;
 
   const lockedOut = room.locked_out_team_ids.includes(myTeam.id);
   const buzzedTeam = teams.find((t) => t.id === room.buzzed_team_id) ?? null;
@@ -64,10 +93,23 @@ export default function Buzzer({
   const arming = room.buzzer_open && armsIn > 0;
   const canBuzz =
     room.buzzer_open && armsIn <= 0 && !room.buzzed_team_id && !lockedOut &&
-    !localBuzzed && !room.active_is_dd;
+    !localBuzzed && !room.active_is_dd && penaltyLeft <= 0;
 
   const buzz = () => {
-    if (!canBuzz || !room.active_clue_id) return;
+    if (!room.active_clue_id) return;
+    // Tap during the countdown = false start: latch the penalty (once) and bail.
+    // The button is deliberately live during arming so we catch this here instead
+    // of swallowing it with a disabled attribute.
+    if (arming) {
+      if (!jumped) {
+        setJumped(true);
+        try {
+          navigator.vibrate?.([30, 30, 30]);
+        } catch {}
+      }
+      return;
+    }
+    if (!canBuzz) return;
     setLocalBuzzed(true);
     try {
       navigator.vibrate?.(80);
@@ -98,9 +140,14 @@ export default function Buzzer({
   } else if (lockedOut) {
     label = "😬 Locked out\n(wrong answer)";
     cls = "bg-loss/20 text-white/80";
+  } else if (jumped && (arming || penaltyLeft > 0)) {
+    // False-started: the countdown tap costs them. Held through the open moment
+    // and PENALTY_MS past it, so a clean reactor gets a clear head start.
+    label = "🚫 Too soon!\nDon't spam";
+    cls = "bg-loss/30 text-white";
   } else if (arming) {
-    // Button stays disabled while arming so early taps never reach claim_buzz
-    // (which would refuse them server-side anyway; this saves the round trip).
+    // Live (not disabled) during arming so a tap here registers as a false start;
+    // buzz() turns it into the penalty above instead of a claim.
     label = `⏳ GET READY\n${Math.ceil(armsIn / 1000)}`;
     cls = "bg-white text-ink";
   } else if (canBuzz) {
@@ -117,7 +164,7 @@ export default function Buzzer({
   return (
     <button
       onPointerDown={buzz}
-      disabled={!canBuzz}
+      disabled={!(arming || canBuzz)}
       className={`w-full flex-1 rounded-3xl font-display text-4xl leading-tight whitespace-pre-line
         flex items-center justify-center text-center select-none touch-manipulation transition ${cls}`}
     >
