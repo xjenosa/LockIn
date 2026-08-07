@@ -14,7 +14,6 @@ delete from rooms where phase = 'results';
 -- lasts about two hours, so this cannot catch a live game).
 select delete_stale_rooms(24) as abandoned_rooms_deleted;
 
--- What's left.
 select count(*) as rooms_remaining,
        count(*) filter (where created_at > now() - interval '2 hours') as probably_live
   from rooms;

@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import Board from "@/components/Board";
 import ClueView from "@/components/ClueView";
 import Confetti from "@/components/Confetti";
+import GridBackdrop from "@/components/GridBackdrop";
 import Leaderboard from "@/components/Leaderboard";
 import QRJoin from "@/components/QRJoin";
 import Timer from "@/components/Timer";
@@ -28,7 +29,8 @@ export default function Projector() {
 
   if (room.phase === "lobby") {
     return (
-      <main className="relative min-h-dvh flex flex-col items-center justify-center gap-8 p-8">
+      <main className="relative isolate min-h-dvh flex flex-col items-center justify-center gap-8 p-8 overflow-hidden">
+        <GridBackdrop />
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(67,226,210,0.12),transparent_55%)]" />
         <Wordmark className="relative text-5xl md:text-7xl" />
         <p className="relative text-white/70 text-2xl">📱 Scan to join: pick or create a team</p>
@@ -142,6 +144,7 @@ export default function Projector() {
   const winner = [...teams].sort((a, b) => b.score - a.score)[0];
   return (
     <Center>
+      <GridBackdrop />
       <Confetti />
       <p className="font-display text-3xl text-signal tracking-widest uppercase">Champions</p>
       {winner && (
@@ -158,7 +161,7 @@ export default function Projector() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-dvh flex flex-col items-center justify-center p-8 text-center">
+    <main className="relative isolate min-h-dvh flex flex-col items-center justify-center p-8 text-center overflow-hidden">
       {children}
     </main>
   );

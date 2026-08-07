@@ -67,7 +67,7 @@ Hard rule: no animation between tap and result. The buzz verdict renders the ins
 
 ## 7. Screen treatments
 
-- **Landing**: ink page, faint teal radial glow from the top. The lock mark centered above the LockIn wordmark, room code input in wide-tracked display caps, one teal CTA. Host link is quiet text underneath.
+- **Landing**: ink page, faint teal radial glow from the top, over a faint thin-line grid that frames the hero and dissolves behind it. The grid is plain rules, not the board's rounded tiles, on purpose: a filled-tile backdrop would read as a second, blurry board on any screen that also shows the real one, so the texture stays a different layer. The same grid backs the other calm screens (lobbies, results/champions) but never the board or clue views. The lock mark, breathing a slow teal glow, centered above the LockIn wordmark, room code input in wide-tracked display caps, one teal CTA. Host link is quiet text underneath.
 - **Lobby (host and projector)**: wordmark small, white QR card with a soft teal ring, room code in signal display caps, team chips popping in with their team colors.
 - **Board**: 6x5 grid of slate tiles on ink. Category row: white caps on `white/[0.04]` with a small teal bar under each name. Values in signal display type. Played tiles fade to near-invisible slate. Active tile rings signal. The just-played column dims with a "just played" note.
 - **Clue view**: full-screen stage with a faint teal glow from the top. Category eyebrow and value up top, clue in big white sentence-case display type. Arming: "GET READY" eyebrow and a giant signal digit popping each second. Open: "BUZZERS LIVE" pulsing in signal.

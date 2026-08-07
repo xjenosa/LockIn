@@ -25,6 +25,12 @@ const config: Config = {
           "0%, 100%": { boxShadow: "0 0 20px 4px rgba(67,226,210,0.55)" },
           "50%": { boxShadow: "0 0 50px 14px rgba(67,226,210,0.9)" },
         },
+        breathe: {
+          // Slow teal breath for the landing lock. drop-shadow (not box-shadow)
+          // so the glow hugs the padlock silhouette, not its square bounding box.
+          "0%, 100%": { filter: "drop-shadow(0 0 16px rgba(67,226,210,0.28))" },
+          "50%": { filter: "drop-shadow(0 0 40px rgba(67,226,210,0.55))" },
+        },
         pop: {
           "0%": { transform: "scale(0.6)", opacity: "0" },
           "80%": { transform: "scale(1.06)", opacity: "1" },
@@ -37,6 +43,7 @@ const config: Config = {
       },
       animation: {
         pulseglow: "pulseglow 1.2s ease-in-out infinite",
+        breathe: "breathe 4.5s ease-in-out infinite",
         pop: "pop 0.35s ease-out",
         fall: "fall 3.5s linear infinite",
       },

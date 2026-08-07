@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import GridBackdrop from "@/components/GridBackdrop";
 import { packs } from "@/content/packs";
 import { createRoom } from "@/lib/api";
 import { setHostToken } from "@/lib/identity";
@@ -26,7 +27,8 @@ export default function HostCreate() {
   };
 
   return (
-    <main className="min-h-dvh flex flex-col items-center justify-center gap-8 p-6">
+    <main className="relative isolate min-h-dvh flex flex-col items-center justify-center gap-8 p-6 overflow-hidden">
+      <GridBackdrop />
       <h1 className="font-display text-4xl md:text-6xl">HOST A GAME</h1>
 
       <div className="w-full max-w-lg space-y-3">

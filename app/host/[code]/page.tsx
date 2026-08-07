@@ -7,6 +7,7 @@ import AnswerPeek from "@/components/AnswerPeek";
 import Board from "@/components/Board";
 import ClueView from "@/components/ClueView";
 import Confetti from "@/components/Confetti";
+import GridBackdrop from "@/components/GridBackdrop";
 import Leaderboard from "@/components/Leaderboard";
 import QRJoin from "@/components/QRJoin";
 import Timer from "@/components/Timer";
@@ -57,7 +58,6 @@ export default function HostGame() {
   const [token, setToken] = useState<string | null>(null);
   const [tokenChecked, setTokenChecked] = useState(false);
 
-  // Final reveal state
   const [finals, setFinals] = useState<FinalEntry[] | null>(null);
   const [revealIdx, setRevealIdx] = useState(0);
   const [answerShown, setAnswerShown] = useState(false);
@@ -123,7 +123,8 @@ export default function HostGame() {
   // ---------------- lobby ----------------
   if (room.phase === "lobby") {
     return (
-      <main className="min-h-dvh p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center justify-center">
+      <main className="relative isolate min-h-dvh p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center justify-center overflow-hidden">
+        <GridBackdrop />
         <div className="text-center">
           <h1 className="font-display text-4xl md:text-6xl mb-6">
             {pack.name}
@@ -474,6 +475,7 @@ export default function HostGame() {
   const winner = [...teams].sort((a, b) => b.score - a.score)[0];
   return (
     <Center>
+      <GridBackdrop />
       <Confetti />
       <p className="font-display text-2xl text-signal tracking-widest uppercase">Champions</p>
       {winner && (
@@ -523,7 +525,7 @@ export default function HostGame() {
 
 function Center({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-dvh flex flex-col items-center justify-center p-6 text-center">
+    <main className="relative isolate min-h-dvh flex flex-col items-center justify-center p-6 text-center overflow-hidden">
       {children}
     </main>
   );
