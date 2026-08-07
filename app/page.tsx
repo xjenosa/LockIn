@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import LockMark from "@/components/LockMark";
 import Wordmark from "@/components/Wordmark";
 import { supabaseConfigured } from "@/lib/supabaseClient";
 
@@ -15,8 +16,13 @@ export default function Landing() {
 
   return (
     <main className="relative min-h-dvh flex flex-col items-center justify-center gap-10 p-6">
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(37,230,196,0.12),transparent_55%)]" />
-      <Wordmark className="relative text-6xl md:text-8xl" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(67,226,210,0.12),transparent_55%)]" />
+      {/* Hero lock: the prominent mark, wordmark stacked under it so both center
+          on the page axis (showMark={false} drops the wordmark's inline lock). */}
+      <div className="relative flex flex-col items-center gap-5">
+        <LockMark className="h-20 w-20 md:h-28 md:w-28 drop-shadow-[0_0_30px_rgba(67,226,210,0.35)]" />
+        <Wordmark showMark={false} className="text-6xl md:text-8xl" />
+      </div>
 
       {!supabaseConfigured && (
         <p className="relative max-w-md text-center text-flare bg-flare/10 border border-flare/30 rounded-xl p-4 text-sm">

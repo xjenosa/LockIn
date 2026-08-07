@@ -6,7 +6,7 @@ const display = Archivo_Black({ weight: "400", subsets: ["latin"], variable: "--
 const sans = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "LOCKIN",
+  title: "LockIn",
   description:
     "Live team trivia for real rooms: host the board on a big screen, players race to lock in from their phones.",
 };
@@ -15,7 +15,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1, // avoid double-tap zoom fighting the buzzer
-  themeColor: "#0B0D12",
+  themeColor: "#010A13",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

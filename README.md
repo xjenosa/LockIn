@@ -1,4 +1,4 @@
-# 🔒 LOCKIN
+# 🔒 LockIn
 
 Live **team buzzer trivia** for in-person events. The host projects the board and reads clues aloud; players scan a QR code, form teams, and race to lock in on their phones. Scores update live on a team leaderboard. Includes Wildcards (secret-wager bonus clues), Last Call (the final wager round), and four ready-to-play question packs.
 

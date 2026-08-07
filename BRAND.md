@@ -1,20 +1,20 @@
-# LOCKIN, the brand system
+# LockIn, the brand system
 
 The design source of truth for this app. Every screen, color, font, and animation decision traces back to this file.
 
 ## 1. Name
 
-**LOCKIN.** Gen-Z for total focus and commitment: you *lock in*, you're *locked in*. It names the exact instant a player commits and buzzes first, and it doubles as the verb for that act. Short, current, verb and noun at once, with zero TV-quiz association.
+**LockIn.** Gen-Z for total focus and commitment: you *lock in*, you're *locked in*. It names the exact instant a player commits and buzzes first, and it doubles as the verb for that act. Short, current, verb and noun at once, with zero TV-quiz association.
 
-Alternatives weighed: **Pounce** (striking first, but no commitment angle), **Faceoff** (team-versus-team energy, less personal), **Klaxon** (an alarm horn, and one letter from Klaxoon, an existing product). LOCKIN wins because the buzz is the lock-in.
+Alternatives weighed: **Pounce** (striking first, but no commitment angle), **Faceoff** (team-versus-team energy, less personal), **Klaxon** (an alarm horn, and one letter from Klaxoon, an existing product). LockIn wins because the buzz is the lock-in.
 
-**Chosen: LOCKIN.** Fallback remains "Buzzer" if the owner overrules.
+**Chosen: LockIn.** Fallback remains "Buzzer" if the owner overrules.
 
-The wordmark is the word LOCKIN in Archivo Black caps, pure white, with a vertical teal "beacon" bar before it (a rounded rectangle, the light that locks on when buzzers open). No exclamation point: the loudest quiz brand on TV ends in one, so we never do. No tagline under it, per owner rule.
+The wordmark is the word LockIn in Archivo Black, pure white (camelCase, matching the ArcaneMath / SignLy portfolio), led by the padlock mark: a coral shackle over a teal body, the lock that snaps shut the instant a player commits. No exclamation point: the loudest quiz brand on TV ends in one, so we never do. No tagline under it, per owner rule.
 
 ## 2. Concept and voice
 
-LOCKIN is a focus ritual, not a quiz show. The room is dark, the board is a wall of quiet slate tiles, and everything that matters glows: teal when something is live, coral when something is at stake. The voice is a hype announcer who respects your time: short lines, present tense, second person ("You're first!", "Look up!").
+LockIn is a focus ritual, not a quiz show. The room is dark, the board is a wall of quiet slate tiles, and everything that matters glows: teal when something is live, coral when something is at stake. The voice is a hype announcer who respects your time: short lines, present tense, second person ("You're first!", "Look up!").
 
 Two-color logic carries the whole identity:
 
@@ -27,13 +27,13 @@ Defined in `tailwind.config.ts`. The old quiz-show tokens (board, boarddark, boa
 
 | Token | Hex | Role | Contrast notes (approx.) |
 |---|---|---|---|
-| `ink` | `#0B0D12` | Page background, text on bright buttons | White on ink 18:1 |
+| `ink` | `#010A13` | Page background, text on bright buttons | White on ink 20:1 |
 | `stage` | `#111826` | Full-screen moment backdrop (clue view, splashes, sheets) | White on stage 16:1 |
 | `tile` | `#1B2332` | Board cells, cards, idle buzzer | White on tile 14:1, signal on tile 9.8:1 |
-| `signal` | `#25E6C4` | Brand primary: live states, CTAs, values, scores | On ink 12.2:1, ink text on signal 12.2:1 |
-| `flare` | `#FF6A3D` | Stakes accent: Wildcard, wagers, Last Call | On stage 6.3:1 (large text only), ink text on flare 6.8:1 |
+| `signal` | `#43E2D2` | Brand primary: live states, CTAs, values, scores | On ink 12.4:1, ink text on signal 12.4:1 |
+| `flare` | `#F38764` | Stakes accent: Wildcard, wagers, Last Call | On stage 7.2:1, ink text on flare 8.0:1 |
 | `win` | `#2FD46D` | Correct adjudication, positive deltas | Ink text on win 10:1 |
-| `loss` | `#F0335A` | Wrong adjudication, negative scores, urgent timer | On ink 4.9:1 (AA normal text), white on loss 3.9:1 (large/bold only) |
+| `loss` | `#F0335A` | Wrong adjudication, negative scores, urgent timer | On ink 5.0:1 (AA normal text), white on loss 3.9:1 (large/bold only) |
 
 Team colors (`TEAM_COLORS` in `lib/game.ts`), eight vivid hues that read on ink and never collide with signal or flare roles:
 `#FF5C5C` red, `#FF9E4D` orange, `#FFD166` amber, `#9BE857` lime, `#57E0FF` ice, `#5CB2FF` sky, `#B48CFF` violet, `#FF7AC1` pink.
@@ -67,7 +67,7 @@ Hard rule: no animation between tap and result. The buzz verdict renders the ins
 
 ## 7. Screen treatments
 
-- **Landing**: ink page, faint teal radial glow from the top. Beacon bar plus LOCKIN wordmark, room code input in wide-tracked display caps, one teal CTA. Host link is quiet text underneath.
+- **Landing**: ink page, faint teal radial glow from the top. The lock mark centered above the LockIn wordmark, room code input in wide-tracked display caps, one teal CTA. Host link is quiet text underneath.
 - **Lobby (host and projector)**: wordmark small, white QR card with a soft teal ring, room code in signal display caps, team chips popping in with their team colors.
 - **Board**: 6x5 grid of slate tiles on ink. Category row: white caps on `white/[0.04]` with a small teal bar under each name. Values in signal display type. Played tiles fade to near-invisible slate. Active tile rings signal. The just-played column dims with a "just played" note.
 - **Clue view**: full-screen stage with a faint teal glow from the top. Category eyebrow and value up top, clue in big white sentence-case display type. Arming: "GET READY" eyebrow and a giant signal digit popping each second. Open: "BUZZERS LIVE" pulsing in signal.

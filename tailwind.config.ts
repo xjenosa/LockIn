@@ -1,17 +1,17 @@
 import type { Config } from "tailwindcss";
 
-// LOCKIN design tokens. See BRAND.md for roles and contrast budgets.
+// LockIn design tokens. See BRAND.md for roles and contrast budgets.
 // Two-color logic: signal (teal) = live, flare (coral) = stakes.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        ink: "#0B0D12", // page background
+        ink: "#010A13", // page background
         stage: "#111826", // full-screen moment backdrop
         tile: "#1B2332", // board cells, cards, idle buzzer
-        signal: "#25E6C4", // brand primary: live states, CTAs, values
-        flare: "#FF6A3D", // stakes: Wildcard, wagers, Last Call
+        signal: "#43E2D2", // brand primary: live states, CTAs, values
+        flare: "#F38764", // stakes: Wildcard, wagers, Last Call
         win: "#2FD46D", // correct adjudication
         loss: "#F0335A", // wrong adjudication, negatives, urgency
       },
@@ -21,8 +21,9 @@ const config: Config = {
       },
       keyframes: {
         pulseglow: {
-          "0%, 100%": { boxShadow: "0 0 20px 4px rgba(37,230,196,0.55)" },
-          "50%": { boxShadow: "0 0 50px 14px rgba(37,230,196,0.9)" },
+          // signal (#43E2D2) as rgb; keep in sync with the token above.
+          "0%, 100%": { boxShadow: "0 0 20px 4px rgba(67,226,210,0.55)" },
+          "50%": { boxShadow: "0 0 50px 14px rgba(67,226,210,0.9)" },
         },
         pop: {
           "0%": { transform: "scale(0.6)", opacity: "0" },

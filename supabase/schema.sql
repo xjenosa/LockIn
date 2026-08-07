@@ -1,4 +1,4 @@
--- LOCKIN: tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
+-- LockIn: tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
 -- then functions.sql.
 --
 -- Both files are IDEMPOTENT: re-running them over a live database brings it up

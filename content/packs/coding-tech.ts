@@ -4,7 +4,7 @@ export const codingTech: Pack = {
   id: "coding-tech",
   name: "Computer Science",
   description:
-    "For CS students, not the whole IT department: data structures, algorithms and Big-O, operating systems, databases, and code you have to actually read. Assumes a couple of semesters of a real CS program.",
+    "Data structures, algorithms and Big-O, operating systems, databases, and reading real code. For CS students.",
   categories: [
     {
       name: "Programming Languages",

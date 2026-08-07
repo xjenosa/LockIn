@@ -76,7 +76,7 @@ export default function ClueView({
     const wagerNum = /^\d+$/.test(wagerInput.trim()) ? parseInt(wagerInput.trim(), 10) : null;
     return (
       <div className="fixed inset-0 bg-stage flex flex-col items-center justify-center p-6 text-center gap-6 z-40">
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(255,106,61,0.16),transparent_55%)]" />
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(243,135,100,0.16),transparent_55%)]" />
         <p className="relative font-display uppercase text-flare/80 text-xl md:text-2xl tracking-widest">
           {category}
         </p>
@@ -138,7 +138,7 @@ export default function ClueView({
   // ---------- Normal clue / revealed Wildcard ----------
   return (
     <div className="fixed inset-0 bg-stage flex flex-col z-40">
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(37,230,196,0.10),transparent_55%)]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(67,226,210,0.10),transparent_55%)]" />
       <div className="relative flex items-center justify-between px-4 md:px-8 py-3">
         <span className="font-display uppercase tracking-widest text-white/60 text-lg md:text-2xl">
           {category}

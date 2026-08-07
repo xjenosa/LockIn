@@ -1,4 +1,4 @@
--- LOCKIN: RPC functions. Run AFTER schema.sql.
+-- LockIn: RPC functions. Run AFTER schema.sql.
 -- All functions are SECURITY DEFINER (they bypass RLS); every host_* function
 -- authenticates via _room_by_host before mutating anything. Function names and
 -- p_* argument names are the PostgREST contract with lib/api.ts; renaming

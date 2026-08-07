@@ -4,7 +4,7 @@ export const indonesia: Pack = {
   id: "indonesia",
   name: "Indonesia",
   description:
-    "Not a civics exam, just growing up Indonesian: the food, the slang, Jakarta life, the music, the local brands, and the weekend trips we all grew up with. Built for the Indonesian Student Association, no PPKn required.",
+    "The food, the slang, Jakarta life, the music, the local brands, and weekend trips. No PPKn required.",
   categories: [
     {
       name: "Makanan & Jajanan",

@@ -1,4 +1,4 @@
--- LOCKIN maintenance. Optional: not part of setup. The statements above the
+-- LockIn maintenance. Optional: not part of setup. The statements above the
 -- opt-in divider are live and safe to run at ANY time, including during a
 -- party (the stale purge cannot touch a game younger than the cutoff).
 --

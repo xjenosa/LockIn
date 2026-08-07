@@ -14,8 +14,8 @@ body {
 
 /* Text glows for hero moments. Glow, never drop shadows: see BRAND.md. */
 .glow-signal {
-  text-shadow: 0 0 24px rgba(37, 230, 196, 0.55);
+  text-shadow: 0 0 24px rgba(67, 226, 210, 0.55);
 }
 .glow-flare {
-  text-shadow: 0 0 28px rgba(255, 106, 61, 0.55);
+  text-shadow: 0 0 28px rgba(243, 135, 100, 0.55);
 }
