@@ -30,7 +30,7 @@ export default function Projector() {
   if (room.phase === "lobby") {
     return (
       <main className="relative isolate min-h-dvh flex flex-col items-center justify-center gap-8 p-8 overflow-hidden">
-        <GridBackdrop />
+        <GridBackdrop values />
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(67,226,210,0.12),transparent_55%)]" />
         <Wordmark className="relative text-5xl md:text-7xl" />
         <p className="relative text-white/70 text-2xl">📱 Scan to join: pick or create a team</p>
@@ -144,7 +144,7 @@ export default function Projector() {
   const winner = [...teams].sort((a, b) => b.score - a.score)[0];
   return (
     <Center>
-      <GridBackdrop />
+      <GridBackdrop values />
       <Confetti />
       <p className="font-display text-3xl text-signal tracking-widest uppercase">Champions</p>
       {winner && (

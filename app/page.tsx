@@ -17,8 +17,13 @@ export default function Landing() {
 
   return (
     <main className="relative isolate min-h-dvh flex flex-col items-center justify-center gap-10 p-6 overflow-hidden">
-      <GridBackdrop />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_50%_-10%,rgba(67,226,210,0.12),transparent_55%)]" />
+      {/* One static central teal glow behind the value grid; shows through the
+          grid's cleared centre under the hero. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_50%_42%,rgba(67,226,210,0.16),transparent_62%)]"
+      />
+      <GridBackdrop values />
       {/* Hero lock: the prominent mark, wordmark stacked under it so both center
           on the page axis (showMark={false} drops the wordmark's inline lock). */}
       <div className="relative flex flex-col items-center gap-5">

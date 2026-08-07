@@ -1,10 +1,10 @@
 import type { Pack } from "../types";
 
-export const indonesia: Pack = {
-  id: "indonesia",
-  name: "Indonesia",
+export const jakartaIndonesia: Pack = {
+  id: "jakarta-indonesia",
+  name: "Jakarta & Indonesia",
   description:
-    "The food, the slang, Jakarta life, the music, the local brands, and weekend trips. No PPKn required.",
+    "The food, the slang, Jakarta life, the music, the local brands, and weekend trips.",
   categories: [
     {
       name: "Makanan & Jajanan",

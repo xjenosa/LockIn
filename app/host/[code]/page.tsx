@@ -124,7 +124,7 @@ export default function HostGame() {
   if (room.phase === "lobby") {
     return (
       <main className="relative isolate min-h-dvh p-6 md:p-10 flex flex-col md:flex-row gap-10 items-center justify-center overflow-hidden">
-        <GridBackdrop />
+        <GridBackdrop values />
         <div className="text-center">
           <h1 className="font-display text-4xl md:text-6xl mb-6">
             {pack.name}
@@ -475,7 +475,7 @@ export default function HostGame() {
   const winner = [...teams].sort((a, b) => b.score - a.score)[0];
   return (
     <Center>
-      <GridBackdrop />
+      <GridBackdrop values />
       <Confetti />
       <p className="font-display text-2xl text-signal tracking-widest uppercase">Champions</p>
       {winner && (

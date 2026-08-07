@@ -52,7 +52,7 @@ The visual identity (name, palette, type, motion) is documented in [`BRAND.md`](
 
 ## Question packs
 
-Ships with: **Picnic General Mix** (memes, lyrics, emoji, K-BBQ, Toronto, light tech) · **Toronto & Canada** · **Indonesia** · **Computer Science**.
+Ships with: **Picnic General Mix** (memes, lyrics, emoji, K-BBQ, Toronto, light tech) · **Toronto & Canada** · **Jakarta & Indonesia** · **Computer Science**.
 
 **To edit clues:** open [`content/packs/`](content/packs/). It's plain TypeScript; edit any `clue`/`answer` string.
 **To add a pack:** copy a pack file, change `id`/`name`/content, register it in [`content/packs/index.ts`](content/packs/index.ts). 6 categories × 5 clues + 1 final. Set `dailyDouble: true` on 1-2 clues (that field is the internal name for a Wildcard). Redeploy.

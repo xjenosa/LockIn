@@ -1,10 +1,10 @@
 import type { Pack } from "../types";
 
-export const codingTech: Pack = {
-  id: "coding-tech",
+export const computerScience: Pack = {
+  id: "computer-science",
   name: "Computer Science",
   description:
-    "Data structures, algorithms and Big-O, operating systems, databases, and reading real code. For CS students.",
+    "Data structures, algorithms and Big-O, operating systems, databases, and reading real code.",
   categories: [
     {
       name: "Programming Languages",

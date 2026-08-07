@@ -28,7 +28,7 @@ export default function HostCreate() {
 
   return (
     <main className="relative isolate min-h-dvh flex flex-col items-center justify-center gap-8 p-6 overflow-hidden">
-      <GridBackdrop />
+      <GridBackdrop values />
       <h1 className="font-display text-4xl md:text-6xl">HOST A GAME</h1>
 
       <div className="w-full max-w-lg space-y-3">
