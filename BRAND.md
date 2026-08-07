@@ -1,26 +1,20 @@
-# Blare, the brand system
+# LOCKIN, the brand system
 
 The design source of truth for this app. Every screen, color, font, and animation decision traces back to this file.
 
 ## 1. Name
 
-Candidates considered:
+**LOCKIN.** Gen-Z for total focus and commitment: you *lock in*, you're *locked in*. It names the exact instant a player commits and buzzes first, and it doubles as the verb for that act. Short, current, verb and noun at once, with zero TV-quiz association.
 
-| Name | Rationale | Wordmark direction |
-|---|---|---|
-| **Blare** (lead) | The sound of a horn at full volume, which is exactly what buzzing in feels like. Short, loud, verb and noun at once. No TV quiz association. | Heavy geometric caps in white, preceded by a teal beacon bar. No exclamation point, ever. |
-| Pounce | The act of striking first. Kinetic and playful. | Rounded caps with a motion streak. |
-| Klaxon | The alarm horn itself. Distinctive, but one letter from Klaxoon, an existing live team engagement product. Too close, rejected as lead. | Slanted industrial caps. |
-| Faceoff | Team versus team showdown energy. | Split two-tone wordmark. |
-| Airhorn | Maximum party energy, zero ambiguity. A bit jokey for a wordmark. | Stencil caps. |
+Alternatives weighed: **Pounce** (striking first, but no commitment angle), **Faceoff** (team-versus-team energy, less personal), **Klaxon** (an alarm horn, and one letter from Klaxoon, an existing product). LOCKIN wins because the buzz is the lock-in.
 
-**Chosen: Blare.** Fallback remains "Buzzer" if the owner overrules.
+**Chosen: LOCKIN.** Fallback remains "Buzzer" if the owner overrules.
 
-The wordmark is the word BLARE in Archivo Black caps, pure white, with a vertical teal "beacon" bar before it (a rounded rectangle, the light that switches on when buzzers open). No exclamation point: the loudest quiz brand on TV ends in one, so we never do. No tagline under it, per owner rule.
+The wordmark is the word LOCKIN in Archivo Black caps, pure white, with a vertical teal "beacon" bar before it (a rounded rectangle, the light that locks on when buzzers open). No exclamation point: the loudest quiz brand on TV ends in one, so we never do. No tagline under it, per owner rule.
 
 ## 2. Concept and voice
 
-Blare is a horn, not a quiz show. The room is dark, the board is a wall of quiet slate tiles, and everything that matters glows: teal when something is live, coral when something is at stake. The voice is a hype announcer who respects your time: short lines, present tense, second person ("You're first!", "Look up!").
+LOCKIN is a focus ritual, not a quiz show. The room is dark, the board is a wall of quiet slate tiles, and everything that matters glows: teal when something is live, coral when something is at stake. The voice is a hype announcer who respects your time: short lines, present tense, second person ("You're first!", "Look up!").
 
 Two-color logic carries the whole identity:
 
@@ -73,14 +67,14 @@ Hard rule: no animation between tap and result. The buzz verdict renders the ins
 
 ## 7. Screen treatments
 
-- **Landing**: ink page, faint teal radial glow from the top. Beacon bar plus BLARE wordmark, room code input in wide-tracked display caps, one teal CTA. Host link is quiet text underneath.
+- **Landing**: ink page, faint teal radial glow from the top. Beacon bar plus LOCKIN wordmark, room code input in wide-tracked display caps, one teal CTA. Host link is quiet text underneath.
 - **Lobby (host and projector)**: wordmark small, white QR card with a soft teal ring, room code in signal display caps, team chips popping in with their team colors.
 - **Board**: 6x5 grid of slate tiles on ink. Category row: white caps on `white/[0.04]` with a small teal bar under each name. Values in signal display type. Played tiles fade to near-invisible slate. Active tile rings signal. The just-played column dims with a "just played" note.
 - **Clue view**: full-screen stage with a faint teal glow from the top. Category eyebrow and value up top, clue in big white sentence-case display type. Arming: "GET READY" eyebrow and a giant signal digit popping each second. Open: "BUZZERS LIVE" pulsing in signal.
 - **Buzz-in**: the loudest thing in the room. A white card pops in with a thick team-color border, a siren emoji, team and player name in ink. Renders the instant the server verdict lands.
 - **Answer reveal**: the answer pops in below the clue in signal display type with a teal text glow.
 - **Wildcard splash** (the secret-wager bonus clue): stage flooded with a coral radial glow, WILDCARD! in flare display caps with a flare glow, wager form on a quiet card, lock button in flare.
-- **Phone buzzer**: one giant rounded-3xl button. Idle slate "Wait for it", white GET READY with the countdown, then full signal teal BLARE! with the teal pulse glow. Winner state flips to signal with "YOU'RE FIRST!". Locked out is dim loss red. Wildcard state is flare: "Look up!".
+- **Phone buzzer**: one giant rounded-3xl button. Idle slate "Wait for it", white GET READY with the countdown, then full signal teal LOCK IN! with the teal pulse glow. Winner state flips to signal with "YOU'RE FIRST!". Locked out is dim loss red. Wildcard state is flare: "Look up!".
 - **Last Call** (the endgame wager round): every phase of it is flare-coded. Host and projector show a LAST CALL eyebrow in flare, wagers render in flare, the reveal runs on quiet cards with signal for the reveal action and win/loss for judgment.
 - **Winner**: confetti falls, CHAMPIONS eyebrow in signal, winner name pops in their team color.
 

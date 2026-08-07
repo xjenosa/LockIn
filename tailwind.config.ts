@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Blare design tokens. See BRAND.md for roles and contrast budgets.
+// LOCKIN design tokens. See BRAND.md for roles and contrast budgets.
 // Two-color logic: signal (teal) = live, flare (coral) = stakes.
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],

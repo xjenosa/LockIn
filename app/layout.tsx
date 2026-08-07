@@ -6,9 +6,9 @@ const display = Archivo_Black({ weight: "400", subsets: ["latin"], variable: "--
 const sans = Space_Grotesk({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "Blare",
+  title: "LOCKIN",
   description:
-    "Live team trivia for real rooms: host the board on a big screen, players race to blare in from their phones.",
+    "Live team trivia for real rooms: host the board on a big screen, players race to lock in from their phones.",
 };
 
 export const viewport: Viewport = {

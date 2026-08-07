@@ -1,6 +1,6 @@
 // localStorage persistence so a reload never kicks anyone out of a live game.
 //
-// Key stability contract: the "buzzer:" prefix predates the Blare rebrand and
+// Key stability contract: the "buzzer:" prefix predates the LOCKIN rebrand and
 // is kept on purpose. Changing these key formats invalidates every stored host
 // token and player identity, which ends all in-progress games. Do not rename.
 

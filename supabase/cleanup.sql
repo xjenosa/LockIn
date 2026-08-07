@@ -1,4 +1,4 @@
--- Blare maintenance. Optional: not part of setup. The statements above the
+-- LOCKIN maintenance. Optional: not part of setup. The statements above the
 -- opt-in divider are live and safe to run at ANY time, including during a
 -- party (the stale purge cannot touch a game younger than the cutoff).
 --
@@ -31,4 +31,4 @@ select count(*) as rooms_remaining,
 -- from Database -> Extensions. Redundant with normal endings; only worthwhile
 -- if abandoned games actually accumulate.
 -- create extension if not exists pg_cron;
--- select cron.schedule('blare-purge-stale', '0 4 * * *', $cron$ select delete_stale_rooms(24); $cron$);
+-- select cron.schedule('lockin-purge-stale', '0 4 * * *', $cron$ select delete_stale_rooms(24); $cron$);

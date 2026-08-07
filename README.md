@@ -1,6 +1,6 @@
-# 🚨 Blare
+# 🔒 LOCKIN
 
-Live **team buzzer trivia** for in-person events. The host projects the board and reads clues aloud; players scan a QR code, form teams, and race to blare in on their phones. Scores update live on a team leaderboard. Includes Wildcards (secret-wager bonus clues), Last Call (the final wager round), and four ready-to-play question packs.
+Live **team buzzer trivia** for in-person events. The host projects the board and reads clues aloud; players scan a QR code, form teams, and race to lock in on their phones. Scores update live on a team leaderboard. Includes Wildcards (secret-wager bonus clues), Last Call (the final wager round), and four ready-to-play question packs.
 
 **Stack:** Next.js (App Router) + Tailwind + Supabase (Postgres + Realtime) → deploys to Vercel free tier.
 
@@ -39,7 +39,7 @@ Open http://localhost:3000, but note phones can't reach `localhost`; for a real 
 | Projector | `/board/XXXX` | read-only mirror for the big screen |
 | Players | `/play/XXXX` | everyone's phones (QR on the lobby/projector) |
 
-**Flow:** pick a pack → project the lobby QR → players join/create teams → Start game → tap a clue, **read it aloud**, then hit **"Open buzzers"** → first blare locks everyone else out → mark ✓ (+value) or ✗ (−value, that team is locked out and others can steal) → Last Call when the board's done (secret wagers → 60s clue → typed answers → dramatic reveal, lowest score first) → confetti. **"Play again"** resets scores back to the lobby.
+**Flow:** pick a pack → project the lobby QR → players join/create teams → Start game → tap a clue, **read it aloud**, then hit **"Open buzzers"** → first to lock in locks everyone else out → mark ✓ (+value) or ✗ (−value, that team is locked out and others can steal) → Last Call when the board's done (secret wagers → 60s clue → typed answers → dramatic reveal, lowest score first) → confetti. **"Play again"** resets scores back to the lobby.
 
 - **Wildcards:** marked clues splash "WILDCARD". Only the wagering team plays; ask their wager out loud, type it, reveal.
 - Everything survives page reloads (host key + player identity are in localStorage; game state lives in Supabase).
@@ -52,7 +52,7 @@ The visual identity (name, palette, type, motion) is documented in [`BRAND.md`](
 
 ## Question packs
 
-Ships with: **Picnic General Mix** (memes, lyrics, emoji, K-BBQ, Toronto, light tech) · **Toronto & Canada** · **Planet & Sustainability** · **Coding & Tech**.
+Ships with: **Picnic General Mix** (memes, lyrics, emoji, K-BBQ, Toronto, light tech) · **Toronto & Canada** · **Indonesia** · **Computer Science**.
 
 **To edit clues:** open [`content/packs/`](content/packs/). It's plain TypeScript; edit any `clue`/`answer` string.
 **To add a pack:** copy a pack file, change `id`/`name`/content, register it in [`content/packs/index.ts`](content/packs/index.ts). 6 categories × 5 clues + 1 final. Set `dailyDouble: true` on 1-2 clues (that field is the internal name for a Wildcard). Redeploy.

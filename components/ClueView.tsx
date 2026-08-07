@@ -20,7 +20,6 @@ export default function ClueView({
   onOpenBuzzer,
   onCorrect,
   onWrong,
-  onReveal,
   onClose,
   onDDSet,
 }: {
@@ -31,7 +30,6 @@ export default function ClueView({
   onOpenBuzzer?: () => void;
   onCorrect?: (teamId: string, delta: number) => void;
   onWrong?: (teamId: string, penalty: number) => void;
-  onReveal?: () => void;
   onClose?: () => void;
   onDDSet?: (teamId: string, wager: number) => void;
 }) {
@@ -208,10 +206,10 @@ export default function ClueView({
       {isHost && (
         <div className="relative bg-black/60 backdrop-blur border-t border-white/10 px-4 py-3 flex flex-wrap items-center justify-center gap-2 md:gap-3">
           {/* Placed left of ✓/✗ so the host reads the answer, then judges.
-              Doubles as the reveal control: hold = private peek, tap = show
-              the room (see AnswerPeek's header for why that split is load-
-              bearing on a projected screen). */}
-          <AnswerPeek text={clue.answer} revealed={room.answer_revealed} onReveal={onReveal} />
+              Peek-only: hold (or hover on a laptop) for a private read; it
+              never publishes the answer to the projector, since the host reads
+              it aloud. A Wildcard miss still auto-reveals via room state. */}
+          <AnswerPeek text={clue.answer} revealed={room.answer_revealed} />
           {room.active_is_dd ? (
             <>
               <button

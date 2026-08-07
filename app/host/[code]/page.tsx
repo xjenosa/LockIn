@@ -318,7 +318,6 @@ export default function HostGame() {
                 void hostReopenAfterMiss(t, penalty).then(refreshLog); // logs its own 'miss' event
               }
             }}
-            onReveal={() => void hostRevealAnswer(t)}
             onClose={() => void hostCloseClue(t)}
             onDDSet={(teamId, wager) => void hostSetDDWager(t, teamId, wager)}
           />

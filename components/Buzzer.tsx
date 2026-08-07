@@ -104,7 +104,7 @@ export default function Buzzer({
     label = `⏳ GET READY\n${Math.ceil(armsIn / 1000)}`;
     cls = "bg-white text-ink";
   } else if (canBuzz) {
-    label = "BLARE!";
+    label = "LOCK IN!";
     cls = "bg-signal text-ink animate-pulseglow active:scale-95";
   } else if (localBuzzed && room.buzzer_open) {
     label = "…";
