@@ -1,10 +1,10 @@
-import { supabase } from "./supabaseClient";
 import type { FinalEntry, Phase, ScoreEvent, ScoreReason } from "./types";
 
-// Every write in the app goes through these SECURITY DEFINER RPCs (defined in
-// supabase/functions.sql); clients have no direct table write access (RLS).
-// Function and p_* argument names are the PostgREST contract: renaming either
-// side alone breaks the call at runtime, not at build time.
+// Every write in the app goes through these Postgres functions (defined in
+// db/functions.sql). The browser never touches the database directly: each call
+// is a POST to app/api/rpc, which dispatches only functions on its ALLOWLIST.
+// Function and p_* argument names are the contract with that route -- renaming
+// either side alone breaks the call at runtime, not at build time.
 //
 // Failures throw Error(message) where message is a SCREAMING_SNAKE code raised
 // by the SQL (ROOM_NOT_FOUND, TEAM_NAME_TAKEN, ...). TeamJoin.FRIENDLY maps
@@ -13,10 +13,21 @@ import type { FinalEntry, Phase, ScoreEvent, ScoreReason } from "./types";
 // host* functions require the host_token minted by createRoom and stored via
 // lib/identity.ts. Player functions authenticate by player_id alone (known
 // accepted risk; see the note on update_player in functions.sql).
-async function rpc<T = void>(fn: string, args: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.rpc(fn, args);
-  if (error) throw new Error(error.message);
-  return data as T;
+export async function rpc<T = void>(
+  fn: string,
+  args: Record<string, unknown>
+): Promise<T> {
+  const res = await fetch("/api/rpc", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fn, args }),
+    cache: "no-store",
+  });
+  const payload = (await res.json().catch(() => null)) as
+    | { data?: unknown; error?: string }
+    | null;
+  if (!res.ok) throw new Error(payload?.error || `HTTP_${res.status}`);
+  return payload?.data as T;
 }
 
 // ---- anyone ----

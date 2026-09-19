@@ -1,11 +1,18 @@
 -- LockIn: RPC functions. Run AFTER schema.sql.
--- All functions are SECURITY DEFINER (they bypass RLS); every host_* function
--- authenticates via _room_by_host before mutating anything. Function names and
--- p_* argument names are the PostgREST contract with lib/api.ts; renaming
--- either side alone breaks calls at runtime.
+-- Every host_* function authenticates via _room_by_host before mutating
+-- anything. Function names and p_* argument names are the calling contract with
+-- app/api/rpc/route.ts, which invokes them by NAMED argument
+-- (fn(p_x => $1, ...)), so renaming either side alone breaks calls at runtime
+-- rather than at build time. A function is reachable from a browser ONLY if it
+-- is listed in that route's ALLOWLIST.
+--
+-- SECURITY DEFINER is kept on every function. It is effectively a no-op for the
+-- single owner role the app connects to as, but it is harmless and keeps these
+-- definitions portable if a restricted role is ever introduced.
 --
 -- Exceptions raised with SCREAMING_SNAKE messages are error codes the client
--- maps to copy (TeamJoin.FRIENDLY). Keep codes stable.
+-- maps to copy (TeamJoin.FRIENDLY). The API route forwards the raw message
+-- through unchanged, so keep the codes stable.
 --
 -- IDEMPOTENT: everything here is "create or replace", so re-running this over a
 -- live database updates the functions in place. No migrations folder.
@@ -88,11 +95,12 @@ begin
   where id = p_room_id;
 end $$;
 
--- These two helpers take a room id rather than a secret, so they must never be
--- callable with the anon key: anyone could skip another team's turn. Any new
--- helper keyed by room id needs the same revoke.
-revoke all on function _advance_control(uuid) from public, anon, authenticated;
-revoke all on function _forget_team(uuid, uuid) from public, anon, authenticated;
+-- These two helpers take a room id rather than a secret: anyone who can call
+-- them could skip another team's turn. On Supabase they were REVOKEd from the
+-- anon role, but Neon has no anon/authenticated role at all (that statement
+-- ERRORS here), so the guard is now that they are absent from the ALLOWLIST in
+-- app/api/rpc/route.ts -- the only way a browser can reach a function.
+-- Any new helper keyed by room id must likewise stay out of that allowlist.
 
 -- =========================== anyone ========================================
 
@@ -242,8 +250,9 @@ begin
   -- on; renaming yourself stays available in every phase. Mid-game moves go
   -- through host_move_player, which is token-guarded.
   -- ACCEPTED RISK: this function authenticates by p_player_id alone, exactly
-  -- as claim_buzz and submit_final do, and player ids are publicly readable
-  -- (players has a public select policy). A per-player secret would close
+  -- as claim_buzz and submit_final do, and player ids are readable by anyone in
+  -- the room (app/api/room/[code] returns every player row, ids included, which
+  -- is how a rejoining phone finds itself). A per-player secret would close
   -- that, at the cost of client+schema changes. Known and deferred; do not
   -- treat as an oversight.
   if v_team.id is distinct from v_old_team then
@@ -793,8 +802,10 @@ end $$;
 
 -- Maintenance purge for games the host never closed out (see cleanup.sql).
 -- Parameter is HOURS: a session lasts about two, so hour granularity can clear
--- the same evening's abandoned rooms. Takes no secret, so it is revoked from
--- clients below: exposed, anyone could wipe live games. Returns rooms deleted.
+-- the same evening's abandoned rooms. Takes no secret, so it must never be
+-- reachable from a browser -- exposed, anyone could wipe live games. It is
+-- therefore kept OUT of the allowlist in app/api/rpc/route.ts; run it yourself
+-- against DATABASE_URL. Returns rooms deleted.
 drop function if exists delete_stale_rooms(int);   -- old signature took days; see the drop rule at the top
 
 create or replace function delete_stale_rooms(p_hours int default 24)
@@ -806,5 +817,3 @@ begin
   get diagnostics v_n = row_count;
   return v_n;
 end $$;
-
-revoke all on function delete_stale_rooms(int) from public, anon, authenticated;

@@ -1,99 +1,76 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { syncServerClock } from "./serverClock";
-import { supabase } from "./supabaseClient";
 import type { Player, Room, Team } from "./types";
 
-// Live room state. Three redundant update paths, all funneling into fetchAll:
-// realtime change events (fast path), a 5s poll (works even when the Realtime
-// publication is missing), and a visibilitychange refetch (phones returning
-// from sleep). Consumers must tolerate coalesced updates: bursts collapse into
-// one refetch, so intermediate row states may never be observed. Buzzer.tsx
-// re-arm logic is written around exactly that.
+// Live room state, fetched from app/api/room/[code] (one round trip for room +
+// teams + players).
+//
+// Supabase Realtime is gone -- Neon has no equivalent -- so the poll IS the
+// update path now rather than a fallback, hence POLL_MS below instead of the old
+// 5s. Two things funnel into fetchAll: that interval, and a visibilitychange
+// refetch for phones coming back from sleep.
+//
+// The interval SKIPS hidden tabs, which is not mere politeness: a forgotten open
+// tab polling forever would hold Neon's compute awake and burn free-tier hours,
+// quietly recreating the always-on cost we left Supabase to escape. Pausing
+// while hidden is what lets Neon suspend between games.
+//
+// Consumers must tolerate coalesced updates: bursts collapse into one refetch,
+// so intermediate row states may never be observed. Buzzer.tsx's re-arm logic
+// is written around exactly that.
+const POLL_MS = 1500;
+
 export function useRoom(code: string) {
   const [room, setRoom] = useState<Room | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [notFound, setNotFound] = useState(false);
-  const roomIdRef = useRef<string | null>(null);
-  const pendingRef = useRef(false);
 
   const fetchAll = useCallback(async () => {
-    const { data: r } = await supabase
-      .from("rooms")
-      .select("*")
-      .eq("code", code.toUpperCase())
-      .maybeSingle();
-    if (!r) {
-      setNotFound(true);
-      return;
+    try {
+      const res = await fetch(`/api/room/${encodeURIComponent(code.toUpperCase())}`, {
+        cache: "no-store",
+      });
+      if (res.status === 404) {
+        setNotFound(true);
+        return;
+      }
+      if (!res.ok) return; // transient server error: keep the last good state
+      const data = (await res.json()) as {
+        room: Room;
+        teams: Team[];
+        players: Player[];
+      };
+      setNotFound(false);
+      setRoom(data.room);
+      setTeams(data.teams ?? []);
+      setPlayers(data.players ?? []);
+    } catch {
+      // Offline, or a request dropped as the phone changed networks. Hold the
+      // last good state and try again next tick rather than blanking the board
+      // mid-game.
     }
-    setNotFound(false);
-    roomIdRef.current = r.id;
-    setRoom(r as Room);
-    const [{ data: t }, { data: p }] = await Promise.all([
-      supabase.from("teams").select("*").eq("room_id", r.id).order("created_at"),
-      supabase.from("players").select("*").eq("room_id", r.id).order("created_at"),
-    ]);
-    setTeams((t as Team[]) ?? []);
-    setPlayers((p as Player[]) ?? []);
   }, [code]);
-
-  // Collapse event bursts into one refetch after 60ms of quiet-ish arrival.
-  const scheduleRefetch = useCallback(() => {
-    if (pendingRef.current) return;
-    pendingRef.current = true;
-    setTimeout(() => {
-      pendingRef.current = false;
-      void fetchAll();
-    }, 60);
-  }, [fetchAll]);
 
   useEffect(() => {
     void fetchAll();
     void syncServerClock(); // one-time skew sync; see lib/serverClock.ts
 
-    // rooms filters server-side by code. teams/players cannot (their rows only
-    // carry room_id, unknown until the first fetch), so they subscribe to the
-    // whole table and filter client-side against roomIdRef.
-    const channel = supabase
-      .channel(`room-${code}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "rooms", filter: `code=eq.${code.toUpperCase()}` },
-        scheduleRefetch
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "teams" },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as { room_id?: string };
-          if (!roomIdRef.current || row?.room_id === roomIdRef.current) scheduleRefetch();
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "players" },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as { room_id?: string };
-          if (!roomIdRef.current || row?.room_id === roomIdRef.current) scheduleRefetch();
-        }
-      )
-      .subscribe();
-
-    const poll = setInterval(() => void fetchAll(), 5000);
+    const poll = setInterval(() => {
+      if (document.visibilityState === "visible") void fetchAll();
+    }, POLL_MS);
     const onVisible = () => {
       if (document.visibilityState === "visible") void fetchAll();
     };
     document.addEventListener("visibilitychange", onVisible);
 
     return () => {
-      supabase.removeChannel(channel);
       clearInterval(poll);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [code, fetchAll, scheduleRefetch]);
+  }, [code, fetchAll]);
 
   return { room, teams, players, notFound, refetch: fetchAll };
 }

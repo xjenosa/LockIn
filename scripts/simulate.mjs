@@ -7,12 +7,18 @@
 //   node scripts/simulate.mjs            # all suites
 //   node scripts/simulate.mjs buzz undo  # named suites only (keys in suite() calls)
 //
-// Requires .env.local. Creates real throwaway rooms in the live Supabase
-// project; they are ordinary rooms, so cleanup.sql's stale purge removes them.
+// Requires DATABASE_URL in .env.local, with db/ already applied (see
+// scripts/migrate.mjs). Creates real throwaway rooms in the live Neon database;
+// they are ordinary rooms, so cleanup.sql's stale purge removes them.
 // Exit code 0 = all checks passed.
+//
+// Talks to Postgres DIRECTLY rather than through app/api/rpc, so it needs no
+// dev server running and can exercise functions that are (correctly) absent from
+// that route's allowlist. The named-argument call built below is the same one
+// the route builds -- keep the two in step.
 
 import { readFileSync } from "fs";
-import { createClient } from "@supabase/supabase-js";
+import { neon } from "@neondatabase/serverless";
 
 const env = Object.fromEntries(
   readFileSync(new URL("../.env.local", import.meta.url), "utf8")
@@ -24,18 +30,52 @@ const env = Object.fromEntries(
     })
 );
 
-const sb = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+const dbUrl = process.env.DATABASE_URL || env.DATABASE_URL;
+if (!dbUrl) {
+  console.error("DATABASE_URL is not set. Put it in .env.local (no NEXT_PUBLIC_ prefix).");
+  process.exit(1);
+}
+const sql = neon(dbUrl);
 const PACK = "picnic-general";
 
-async function rpc(fn, args) {
-  const { data, error } = await sb.rpc(fn, args);
-  if (error) throw new Error(`${fn}: ${error.message}`);
-  return data;
+// Mirrors app/api/rpc/route.ts: named arguments, nulls dropped so that SQL
+// DEFAULTs apply. Always resolves to result ROWS.
+async function rpc(fn, args = {}) {
+  const named = [];
+  const values = [];
+  for (const [k, v] of Object.entries(args)) {
+    if (v === null || v === undefined) continue;
+    values.push(v);
+    named.push(`${k} => $${values.length}`);
+  }
+  try {
+    return await sql.query(`select * from ${fn}(${named.join(", ")})`, values);
+  } catch (e) {
+    throw new Error(`${fn}: ${e.message}`);
+  }
 }
-const room = (code) => sb.from("rooms").select("*").eq("code", code).maybeSingle().then((r) => r.data);
+const room = (code) =>
+  sql.query("select * from rooms where code = $1", [code]).then((r) => r[0] ?? null);
 const teamsOf = (roomId) =>
-  sb.from("teams").select("*").eq("room_id", roomId).order("created_at").then((r) => r.data ?? []);
+  sql.query("select * from teams where room_id = $1 order by created_at", [roomId]);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Sleeps until the DATABASE clock passes `when` (plus padMs).
+//
+// Timing assertions must never be driven off Date.now(): the local machine's
+// clock and the database's differ -- this dev box runs a few hundred ms AHEAD of
+// Neon -- so a wait computed from Date.now() undershoots buzzer_arms_at, buzzes
+// early, and claim_buzz then correctly rejects the tap. That looks like an app
+// bug and is not one. lib/serverClock.ts absorbs the same skew for real clients.
+async function waitUntilServer(when, padMs = 0) {
+  const target = new Date(when).getTime() + padMs;
+  for (;;) {
+    const rows = await rpc("server_now");
+    const now = new Date(rows[0].server_now).getTime();
+    if (now >= target) return;
+    await sleep(Math.max(25, Math.min(250, target - now)));
+  }
+}
 
 // ---------------------------------------------------------------- harness ---
 const results = [];
@@ -114,7 +154,10 @@ await suite("buzz", only, "buzz concurrency", async () => {
   check("room records the buzzing player", !!r.buzzed_player_name, "buzzed_player_name is null");
 
   // Winner must match a real team, and buzzes log must contain the winner.
-  const { data: buzzes } = await sb.from("buzzes").select("*").eq("room_id", g.roomId).eq("clue_id", CLUE);
+  const buzzes = await sql.query(
+    "select * from buzzes where room_id = $1 and clue_id = $2",
+    [g.roomId, CLUE]
+  );
   eq("exactly one row in the buzzes audit log", buzzes?.length, 1);
   eq("audit log winner matches room state", buzzes?.[0]?.team_id, r.buzzed_team_id);
 
@@ -135,8 +178,10 @@ await suite("arm", only, "buzzer arm delay", async () => {
 
   const r = await room(g.code);
   check("buzzer_arms_at is set in the future", new Date(r.buzzer_arms_at) > new Date(), `arms_at=${r.buzzer_arms_at}`);
-  check("clue_opened_at matches arms_at (clock starts after countdown)",
-    r.clue_opened_at === r.buzzer_arms_at, `opened=${r.clue_opened_at} arms=${r.buzzer_arms_at}`);
+  // Compare instants, not objects: the driver hands back Date values (PostgREST
+  // returned ISO strings), and two Dates for the same moment are never ===.
+  eq("clue_opened_at matches arms_at (clock starts after countdown)",
+    new Date(r.clue_opened_at).getTime(), new Date(r.buzzer_arms_at).getTime());
 
   // Spam during the countdown: every one must be rejected.
   const early = await Promise.all(
@@ -148,9 +193,8 @@ await suite("arm", only, "buzzer arm delay", async () => {
   const mid = await room(g.code);
   eq("spamming does not latch a winner", mid.buzzed_team_id, null);
 
-  // Wait past the arm moment, then buzz for real.
-  const waitMs = new Date(r.buzzer_arms_at).getTime() - Date.now() + 400;
-  await sleep(Math.max(waitMs, 0));
+  // Wait past the arm moment on the SERVER clock, then buzz for real.
+  await waitUntilServer(r.buzzer_arms_at, 400);
   const late = await rpc("claim_buzz", { p_code: g.code, p_player_id: g.players[1].player_id, p_clue_id: CLUE });
   check("a buzz after arming is accepted", late[0]?.won === true, "still rejected after arms_at passed");
 
@@ -302,8 +346,27 @@ await suite("auth", only, "cross-room auth", async () => {
   } catch { badToken = true; }
   check("an invalid host token is rejected", badToken, "bogus token was accepted");
 
-  const { data: hosts } = await sb.from("room_hosts").select("*").limit(1);
-  check("room_hosts is not readable with the anon key", !hosts || hosts.length === 0, "host tokens are exposed!");
+  // On Supabase this asserted that RLS hid room_hosts from the anon key. There
+  // is no anon key any more -- a browser's only database access is the ALLOWLIST
+  // in app/api/rpc -- so the equivalent guarantee is that nothing token-free or
+  // internal appears in that list.
+  const routeSrc = readFileSync(new URL("../app/api/rpc/route.ts", import.meta.url), "utf8");
+  const allowlist = routeSrc.slice(
+    routeSrc.indexOf("const ALLOWLIST"),
+    routeSrc.indexOf("};", routeSrc.indexOf("const ALLOWLIST"))
+  );
+  // Match KEYS only. A plain substring search also hits the explanatory
+  // comments inside the object (one of which mentions _room_by_host), which
+  // would report a hole that is not there.
+  const keys = [...allowlist.matchAll(/^\s*([a-z_][a-z0-9_]*)\s*:/gim)].map((m) => m[1]);
+  check("the ALLOWLIST parsed", keys.length > 20, `parsed only ${keys.length} entries`);
+  for (const forbidden of ["delete_stale_rooms", "_room_by_host", "_advance_control", "_forget_team"]) {
+    check(
+      `${forbidden} is not browser-callable`,
+      !keys.includes(forbidden),
+      "present as an app/api/rpc ALLOWLIST key"
+    );
+  }
 });
 
 // --- 8. update_player guards ----------------------------------------------

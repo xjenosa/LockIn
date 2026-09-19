@@ -1,6 +1,6 @@
 "use client";
 
-import { supabase } from "./supabaseClient";
+import { rpc } from "./api";
 
 // Timebase contract: buzzer_arms_at and clue_opened_at are DB timestamps, so
 // EVERY countdown must compare against serverNow(), never Date.now(). A device
@@ -19,13 +19,17 @@ export async function syncServerClock() {
   syncing = true;
   try {
     const t0 = Date.now();
-    // A database missing server_now() (never migrated) leaves skew at 0, which
-    // degrades to raw device time rather than failing.
-    const { data, error } = await supabase.rpc("server_now");
-    if (error || typeof data !== "string") return;
+    // server_now() is declared "scalar" in the app/api/rpc allowlist, so this
+    // resolves to the bare ISO timestamp string, exactly as it did through
+    // PostgREST.
+    const data = await rpc<string>("server_now", {});
+    if (typeof data !== "string") return;
     // Assume a symmetric round trip: the server read its clock ~rtt/2 ago.
     skew = Date.parse(data) + (Date.now() - t0) / 2 - Date.now();
     synced = true;
+  } catch {
+    // An unreachable route, or a database never migrated (no server_now()),
+    // leaves skew at 0 -- degrading to raw device time rather than failing.
   } finally {
     syncing = false;
   }

@@ -1,7 +1,7 @@
-// Client mirrors of the DB rows in supabase/schema.sql and of RPC return
-// shapes in supabase/functions.sql. Field names ARE the DB contract: renaming
+// Client mirrors of the DB rows in db/schema.sql and of RPC return
+// shapes in db/functions.sql. Field names ARE the DB contract: renaming
 // one here without a matching schema change breaks the typed reads in
-// lib/useRoom.ts silently (Supabase returns untyped JSON).
+// lib/useRoom.ts silently (app/api/room/[code] returns untyped JSON).
 //
 // dd_* fields are the internal names of the Wildcard mechanic (user-facing
 // label renamed in the 2026 rebrand; DB names kept). Do not rename.

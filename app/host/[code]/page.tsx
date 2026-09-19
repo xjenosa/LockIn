@@ -182,7 +182,7 @@ export default function HostGame() {
     // rather than pick_index: a pre-migration room has an empty ring until the
     // first close_clue back-fills it, and control_team_id is what everything
     // else reads. The prune+append below MUST mirror _advance_control in
-    // supabase/functions.sql (teams ordered by created_at) or this label names
+    // db/functions.sql (teams ordered by created_at) or this label names
     // the wrong team the moment someone joins mid-game.
     const stored = room.pick_order ?? [];
     const ring = [

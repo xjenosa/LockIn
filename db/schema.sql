@@ -1,5 +1,4 @@
--- LockIn: tables, RLS and realtime. Run this FIRST in the Supabase SQL editor,
--- then functions.sql.
+-- LockIn: tables. Run this FIRST in the Neon SQL editor, then functions.sql.
 --
 -- Both files are IDEMPOTENT: re-running them over a live database brings it up
 -- to date without touching existing rows. There is deliberately no migrations
@@ -9,6 +8,13 @@
 -- legacy names on purpose (lib/types.ts and the UI read them). Renaming any
 -- column here silently breaks the typed client reads. localStorage keys and
 -- clue id format have the same freeze; see lib/identity.ts and lib/game.ts.
+--
+-- ACCESS MODEL (this changed when we left Supabase): there is no RLS and no
+-- public anon role here. Browsers never reach this database at all -- they call
+-- app/api/rpc/route.ts (an explicit ALLOWLIST of the functions in
+-- functions.sql) and app/api/room/[code]/route.ts. DATABASE_URL is server-only.
+-- That allowlist is the security boundary now, so adding an entry to it is the
+-- dangerous step, not granting a table policy.
 
 create table if not exists rooms (
   id uuid primary key default gen_random_uuid(),
@@ -35,9 +41,9 @@ create table if not exists rooms (
   created_at timestamptz not null default now()
 );
 
--- The host secret lives in its own table with NO select policy so the public
--- anon key can never read it; rooms itself must stay publicly readable for
--- realtime. Never move host_token onto rooms.
+-- The host secret lives in its own table so that no read path can return it:
+-- app/api/room/[code] selects rooms/teams/players only, and nothing joins this.
+-- Never move host_token onto rooms.
 create table if not exists room_hosts (
   room_id uuid primary key references rooms(id) on delete cascade,
   host_token uuid unique not null default gen_random_uuid()
@@ -61,9 +67,10 @@ create table if not exists players (
   created_at timestamptz not null default now()
 );
 
--- Last Call wagers/answers, one row per team: NO select policy, so phones
--- cannot peek at other teams. Host reads via host_get_finals; a player reads
--- only their own team's row via get_my_final.
+-- Last Call wagers/answers, one row per team. No endpoint returns this table
+-- directly, so phones cannot peek at other teams: the host reads it through
+-- host_get_finals, and a player only ever sees their own team's row via
+-- get_my_final.
 create table if not exists final_submissions (
   team_id uuid primary key references teams(id) on delete cascade,
   room_id uuid not null references rooms(id) on delete cascade,
@@ -73,8 +80,8 @@ create table if not exists final_submissions (
 );
 
 -- Scoring audit trail; host_undo_event flips reversed instead of deleting.
--- label can hold the correct answer, so like final_submissions it gets NO
--- select policy; the host reads it through host_get_score_log. The reason
+-- label can hold the correct answer, so like final_submissions it is never
+-- exposed directly; the host reads it through host_get_score_log. The reason
 -- CHECK list is mirrored by ScoreReason in lib/types.ts.
 create table if not exists score_events (
   id uuid primary key default gen_random_uuid(),
@@ -102,6 +109,13 @@ create table if not exists buzzes (
   created_at timestamptz not null default now()
 );
 
+-- Postgres does not index foreign keys automatically, and app/api/room/[code]
+-- filters both of these by room_id on every poll -- which, with realtime gone,
+-- is now the hottest query in the app (once per ~1.5s per connected client).
+-- Cheap indexes, and they keep Neon's compute time down.
+create index if not exists teams_room_idx   on teams (room_id);
+create index if not exists players_room_idx on players (room_id);
+
 -- ---------------------------------------------------------------------------
 -- Upgrade block for databases created before newer columns existed.
 --
@@ -115,44 +129,12 @@ alter table rooms add column if not exists pick_order uuid[] not null default '{
 alter table rooms add column if not exists pick_index int not null default 0;
 
 -- ---------------------------------------------------------------------------
--- Row Level Security: public (anon) may READ live game state, never write.
--- All writes go through SECURITY DEFINER functions in functions.sql.
--- room_hosts, final_submissions and score_events have RLS enabled with no
--- policies at all: invisible to clients.
+-- Deliberately absent: RLS, table policies, and a realtime publication.
+--
+-- All three existed only to make Supabase safe, where the browser held an anon
+-- key and spoke to PostgREST directly. Neon has no PostgREST, no realtime, and
+-- no anon/authenticated roles -- so `enable row level security` is pointless
+-- here and `alter publication supabase_realtime ...` would ERROR outright.
+-- The boundary moved into the app instead; see the ACCESS MODEL note at the
+-- top. Live updates are now the poll in lib/useRoom.ts.
 -- ---------------------------------------------------------------------------
-alter table rooms enable row level security;
-alter table room_hosts enable row level security;
-alter table teams enable row level security;
-alter table players enable row level security;
-alter table final_submissions enable row level security;
-alter table score_events enable row level security;
-alter table buzzes enable row level security;
-
--- Dropped first so this file can be re-run over a live database.
-drop policy if exists "public read rooms"   on rooms;
-drop policy if exists "public read teams"   on teams;
-drop policy if exists "public read players" on players;
-drop policy if exists "public read buzzes"  on buzzes;
-
-create policy "public read rooms"   on rooms   for select using (true);
-create policy "public read teams"   on teams   for select using (true);
-create policy "public read players" on players for select using (true);
-create policy "public read buzzes"  on buzzes  for select using (true);
-
--- ---------------------------------------------------------------------------
--- Realtime publication for the tables clients watch (lib/useRoom.ts).
--- score_events, final_submissions and room_hosts are deliberately excluded:
--- broadcasting them would push answers, wagers or the host secret to phones.
--- ---------------------------------------------------------------------------
-do $$
-declare v_t text;
-begin
-  foreach v_t in array array['rooms', 'teams', 'players'] loop
-    if not exists (
-      select 1 from pg_publication_tables
-       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = v_t
-    ) then
-      execute format('alter publication supabase_realtime add table public.%I', v_t);
-    end if;
-  end loop;
-end $$;

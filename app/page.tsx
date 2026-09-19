@@ -1,15 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import GridBackdrop from "@/components/GridBackdrop";
 import LockMark from "@/components/LockMark";
 import Wordmark from "@/components/Wordmark";
-import { supabaseConfigured } from "@/lib/supabaseClient";
 
 export default function Landing() {
   const router = useRouter();
   const [code, setCode] = useState("");
+  // DATABASE_URL is server-only (it is a Postgres credential), so the old
+  // build-time supabaseConfigured boolean cannot exist in the browser any more;
+  // app/api/health answers for it. null = no answer yet, so a slow reply renders
+  // nothing instead of flashing a false warning.
+  const [configured, setConfigured] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/health", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setConfigured(Boolean(d?.configured)))
+      .catch(() => setConfigured(false));
+  }, []);
 
   const join = () => {
     if (code.trim().length >= 3) router.push(`/play/${code.trim().toUpperCase()}`);
@@ -31,10 +42,10 @@ export default function Landing() {
         <Wordmark showMark={false} className="text-6xl md:text-8xl" />
       </div>
 
-      {!supabaseConfigured && (
+      {configured === false && (
         <p className="relative max-w-md text-center text-flare bg-flare/10 border border-flare/30 rounded-xl p-4 text-sm">
-          ⚠️ Supabase isn&apos;t configured. Set NEXT_PUBLIC_SUPABASE_URL and
-          NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see README).
+          ⚠️ The database isn&apos;t configured. Set DATABASE_URL in .env.local,
+          then run <code>node scripts/migrate.mjs</code> (see README).
         </p>
       )}
 

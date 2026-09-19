@@ -6,7 +6,7 @@ import { TEAM_COLORS } from "@/lib/game";
 import type { Team } from "@/lib/types";
 
 // Error-code copy map. Keys are the SCREAMING_SNAKE codes raised by
-// supabase/functions.sql (join_room / update_player); keep in sync with the
+// db/functions.sql (join_room / update_player); keep in sync with the
 // SQL. Exported because the play page's edit sheet calls update_player itself
 // and must surface identical wording.
 export const FRIENDLY: Record<string, string> = {
