@@ -30,6 +30,10 @@ Open http://localhost:3000, but note phones can't reach `localhost`; for a real 
 3. Add the two environment variables from `.env.local`.
 4. Deploy. Done: share `https://your-app.vercel.app`.
 
+### Keeping Supabase awake
+
+Supabase's free tier **pauses a project after 7 days of inactivity**, and unpausing is a manual click. [`vercel.json`](vercel.json) registers a daily Vercel Cron that pings [`app/api/keep-alive/route.ts`](app/api/keep-alive/route.ts), which runs a trivial `server_now()` query — enough activity to reset the timer. It activates automatically on your next production deploy; confirm it under **Vercel → Project → Settings → Cron Jobs**. Optionally set a `CRON_SECRET` env var (see `.env.local.example`) to refuse stray pings. (Cron Jobs need a Vercel account with the project deployed; Hobby plan runs them once daily, well inside the 7-day window.)
+
 ## Game day
 
 | Screen | URL | Who |
