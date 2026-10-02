@@ -1,0 +1,21 @@
+# core.autocrlf rewrites line endings on text files. Mark binaries so git
+# stores them byte-for-byte and never corrupts them.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.svg   -text
+*.pdf   binary
+*.zip   binary
+*.mp4   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.eot   binary
+*.docx  binary
+*.xlsx  binary
+*.pptx  binary
