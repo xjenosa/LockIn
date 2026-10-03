@@ -1,13 +1,28 @@
 import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 
+// Caching is disabled THREE ways on purpose. `dynamic = "force-dynamic"` alone
+// was not enough: in production Vercel still served this route from a cached
+// response keyed on the pathname (populated by the very first request, and not
+// varied by query string), so every client froze on whatever game state existed
+// when it first polled -- buzzers never appeared to open and buzzes never showed
+// on the projector. The response headers below are what actually stop it.
+// Do not remove them; this endpoint must never be cached by anything.
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
+const NO_STORE = {
+  "Cache-Control": "no-store, no-cache, max-age=0, must-revalidate",
+  "CDN-Cache-Control": "no-store",
+  "Vercel-CDN-Cache-Control": "no-store",
+} as const;
 
 // The read path. Replaces the three separate PostgREST selects useRoom.ts used
 // to make (rooms, then teams + players) with ONE round trip.
 //
 // With realtime gone this is polled by every connected phone and projector, so
-// it is now the hottest query in the app -- which is why db/schema.sql carries
+// it is the hottest query in the app -- which is why db/schema.sql carries
 // room_id indexes on teams and players.
 //
 // It returns rooms/teams/players and nothing else. room_hosts,
@@ -41,7 +56,7 @@ export async function GET(
 ) {
   const code = (params.code ?? "").trim();
   if (!code) {
-    return NextResponse.json({ error: "ROOM_NOT_FOUND" }, { status: 404 });
+    return NextResponse.json({ error: "ROOM_NOT_FOUND" }, { status: 404, headers: NO_STORE });
   }
 
   try {
@@ -53,17 +68,16 @@ export async function GET(
 
     const row = rows[0];
     if (!row) {
-      return NextResponse.json({ error: "ROOM_NOT_FOUND" }, { status: 404 });
+      return NextResponse.json({ error: "ROOM_NOT_FOUND" }, { status: 404, headers: NO_STORE });
     }
-    return NextResponse.json({
-      room: row.room,
-      teams: row.teams,
-      players: row.players,
-    });
+    return NextResponse.json(
+      { room: row.room, teams: row.teams, players: row.players },
+      { headers: NO_STORE }
+    );
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "DB_ERROR" },
-      { status: 500 }
+      { status: 500, headers: NO_STORE }
     );
   }
 }
