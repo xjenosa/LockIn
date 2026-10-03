@@ -51,6 +51,8 @@ Neon scales compute to zero after a few minutes of inactivity and **auto-resumes
 3. Add `DATABASE_URL` as an environment variable (plus `NEXT_PUBLIC_SITE_URL` if you set one).
 4. Deploy. Done: share `https://your-app.vercel.app`.
 
+> **If you add or change an environment variable later, you must trigger a new deploy.** Vercel snapshots env vars into a deployment at build time, so a deployment that already exists will never pick up a newly-saved variable -- the app keeps reporting that the database is not configured until a *fresh* build runs. Either **Deployments -> the row's `...` menu -> Redeploy**, or push any commit.
+
 ## Game day
 
 | Screen | URL | Who |
